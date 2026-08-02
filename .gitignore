@@ -4,6 +4,17 @@ config/wallpaper/wallhaven-key
 *.token
 .env
 
+# Colours generated from the wallpaper by matugen. Untracked so a retheme
+# doesn't dirty the tree on every run. A neutral fallback lives in defaults/
+# and install.sh seeds it whenever one of these is missing.
+config/hypr/colors.lua
+config/hypr/hyprlock.conf
+config/quickshell/Colors.qml
+config/wlogout/style.css
+config/gtk-3.0/colors.css
+config/gtk-4.0/colors.css
+config/alacritty/colors.toml
+
 # Editor / runtime state that isn't configuration
 config/micro/buffers/
 __pycache__/

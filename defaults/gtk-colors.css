@@ -1,0 +1,35 @@
+/* NEUTRAL FALLBACK -- seeded by install.sh only when no themed file exists.
+   Regenerate with:  wallpaper [/path/to/image]
+   Imported by gtk-3.0/gtk.css and gtk-4.0/gtk.css. */
+
+@define-color accent_color #9db4c8;
+@define-color accent_bg_color #9db4c8;
+@define-color accent_fg_color #16242c;
+
+@define-color theme_bg_color #131416;
+@define-color theme_fg_color #e3e4e6;
+@define-color theme_base_color #1d1f22;
+@define-color theme_text_color #e3e4e6;
+
+@define-color theme_selected_bg_color #9db4c8;
+@define-color theme_selected_fg_color #16242c;
+
+@define-color window_bg_color #131416;
+@define-color window_fg_color #e3e4e6;
+@define-color view_bg_color #1d1f22;
+@define-color view_fg_color #e3e4e6;
+@define-color headerbar_bg_color #1d1f22;
+@define-color headerbar_fg_color #e3e4e6;
+@define-color popover_bg_color #1d1f22;
+@define-color popover_fg_color #e3e4e6;
+@define-color card_bg_color #1d1f22;
+@define-color card_fg_color #e3e4e6;
+@define-color sidebar_bg_color #1d1f22;
+@define-color sidebar_fg_color #e3e4e6;
+
+@define-color borders #4a4d52;
+@define-color unfocused_borders #4a4d52;
+@define-color insensitive_fg_color #909398;
+
+@define-color error_color #ffb4ab;
+@define-color warning_color #e6c07b;

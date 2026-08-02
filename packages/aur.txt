@@ -1,19 +1,42 @@
-bibata-cursor-theme
-brave-nightly-bin
-harbor-stremio-beta-bin
-heroic-games-launcher-bin
-hyprqt6engine
-hyprsysteminfo
-noto-fonts-ar
-paru
-paru-debug
-proton-ge-custom-bin
-protonup-qt-bin
-rofi-bluetooth-git
-stremio-enhanced-bin
-timeshift-autosnap
-ttf-amiri
-vesktop-bin
-visual-studio-code-bin
-wlogout
-xpadneo-dkms
+# Explicitly-installed AUR packages.
+#
+# Install (the sed strips these comments):
+#   sed 's/#.*//' packages/aur.txt | paru -S --needed -
+#
+# Only the "Desktop" section matters for this config. Everything below it is
+# personal software -- skim it and delete what you don't want rather than
+# installing the lot.
+
+# --- Desktop ---------------------------------------------------------------
+# Needed by this config.
+wlogout                      # Logout menu -- bound in keybinds.lua, themed by matugen
+bibata-cursor-theme          # Cursor theme -- autostart.lua sets Bibata-Modern-Ice
+rofi-bluetooth-git           # Bluetooth menu -- what the rofi-bluetooth script wraps
+hyprqt6engine                # Qt6 theme provider for Hyprland
+noto-fonts-ar                # Noto Arabic -- drop if you don't need Arabic script
+ttf-amiri                    # Amiri Arabic typeface -- drop if you don't need Arabic
+
+# --- AUR helper ------------------------------------------------------------
+paru                         # The AUR helper this list assumes
+paru-debug                   # Debug symbols for paru -- safe to skip
+
+# --- Hardware --------------------------------------------------------------
+xpadneo-dkms                 # Xbox One wireless controller driver -- only if you use one
+hyprsysteminfo               # Small Qt6 system information window
+
+# --- System ----------------------------------------------------------------
+timeshift-autosnap           # Auto-snapshot before pacman upgrades -- needs btrfs + timeshift
+
+# --- Gaming ----------------------------------------------------------------
+# OPTIONAL.
+proton-ge-custom-bin         # Valve's Proton with community patches
+protonup-qt-bin              # GUI to manage Proton-GE and Wine-GE versions
+heroic-games-launcher-bin    # Launcher for Epic, Amazon and GOG games
+
+# --- Applications ----------------------------------------------------------
+# PERSONAL. None of this is part of the desktop -- delete freely.
+brave-nightly-bin            # Brave browser, nightly channel
+visual-studio-code-bin       # VS Code (Microsoft build)
+vesktop-bin                  # Discord client with Vencord, better Wayland screenshare
+stremio-enhanced-bin         # Stremio with plugin and theme support
+harbor-stremio-beta-bin      # Alternative Stremio client

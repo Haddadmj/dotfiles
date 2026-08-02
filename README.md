@@ -16,7 +16,8 @@ is regenerated from the current wallpaper by a single `wallpaper` command.
 | `config/alacritty/`, `rofi/`, `wlogout/`, `gtk-3.0/`, `gtk-4.0/`, `qt6ct/` | Terminal, menus, logout screen, widget theming |
 | `local/bin/` | Helper scripts — see below |
 | `local/share/wallpaper-theme/` | `gen-terminal.py`, the terminal-palette generator the `wallpaper` script calls |
-| `packages/` | Explicitly-installed package lists, for rebuilding a machine |
+| `defaults/` | Neutral fallback colours, seeded on install when no themed file exists |
+| `packages/` | Commented, grouped package lists for rebuilding a machine |
 
 ### Scripts (`local/bin/`)
 
@@ -58,16 +59,33 @@ Read that output. If you're happy with what it says it will do, run it for real:
 
 Then either log out and back in, or `hyprctl reload`.
 
-### Packages
+### Uninstall
 
 ```sh
-sudo pacman -S --needed - < packages/pacman.txt
-paru  -S --needed - < packages/aur.txt
+./install.sh -u -n    # again, preview first
+./install.sh -u
 ```
 
-`packages/aur.txt` includes some machine-specific things (Steam/Proton, emulator
-and launcher packages, `xpadneo-dkms` for a controller). Skim it and drop what
-you don't want rather than installing it wholesale.
+Removes only symlinks that point into this repo — real files, and links pointing
+anywhere else, are left alone — then restores the newest backup over the gaps.
+Anything already in place is left in the backup rather than overwritten, and the
+backup directory is never deleted.
+
+### Packages
+
+Both lists are commented and grouped by section, so you can delete whole
+categories you don't want. The `sed` strips the comments, which pacman can't
+parse:
+
+```sh
+sed 's/#.*//' packages/pacman.txt | sudo pacman -S --needed -
+sed 's/#.*//' packages/aur.txt    | paru -S --needed -
+```
+
+Only the **Hyprland desktop** and **Fonts** sections are actually required.
+Base-system, NVIDIA, gaming, emulation and personal-application sections are
+labelled and safe to drop. Read `packages/pacman.txt` before running it — the
+base section assumes an AMD CPU, btrfs and GRUB/EFI.
 
 ## The wallpaper → colour pipeline
 
@@ -92,8 +110,12 @@ To change how something is coloured, edit the matching file in
 `config/matugen/templates/` (or `local/share/wallpaper-theme/gen-terminal.py`
 for the terminal palette), then re-run `wallpaper`.
 
-They're committed anyway so a fresh clone looks right before you've picked a
-wallpaper.
+Those seven paths are **gitignored**, so retheming doesn't leave the repo dirty
+on every wallpaper change. A neutral grey-blue fallback for each lives in
+`defaults/`, and `install.sh` seeds it only where no themed file exists — which
+matters because `look.lua` does `require("colors")` and most of the Quickshell
+QML references `Colors.`, so a clone missing them would fail to start a session
+at all. Run `wallpaper` once and your real colours replace the fallback.
 
 ### Wallhaven API key
 

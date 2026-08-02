@@ -1,145 +1,184 @@
-7zip
-alacritty
-amd-ucode
-base
-base-devel
-bash-completion
-bluez
-btrfs-progs
-cliphist
-dmidecode
-dunst
-efibootmgr
-fastfetch
-ffmpegthumbnailer
-file-roller
-fzf
-gamemode
-gamescope
-git
-gnome-themes-extra
-goverlay
-gparted
-grim
-grub
-grub-btrfs
-gvfs
-htop
-hypnotix
-hyprland
-hyprlock
-hyprpaper
-hyprpicker
-hyprpolkitagent
-hyprsunset
-imagemagick
-imv
-inotify-tools
-jdk-openjdk
-jq
-lact
-lib32-gamemode
-lib32-mangohud
-lib32-nvidia-utils
-lib32-vulkan-icd-loader
-libayatana-appindicator
-libgsf
-libopenraw
-libretro-beetle-psx-hw
-libretro-core-info
-libretro-genesis-plus-gx
-libretro-mgba
-libretro-mupen64plus-next
-libretro-nestopia
-libretro-overlays
-libretro-ppsspp
-libretro-shaders-slang
-libretro-snes9x
-libva-nvidia-driver
-linux
-linux-firmware
-linux-headers
-loupe
-lutris
-ly
-mame-tools
-man-db
-mangohud
-matugen
-micro
-networkmanager
-networkmanager-dmenu
-nm-connection-editor
-noto-fonts
-noto-fonts-emoji
-ntfs-3g
-ntfsprogs
-nvidia-open-dkms
-nwg-displays
-nwg-look
-obs-studio
-obs-studio-plugin-browser
-os-prober
-otf-font-awesome
-pacman-contrib
-pamixer
-pavucontrol
-pipewire-pulse
-pipewire-session-manager
-pkgfile
-playerctl
-polkit-kde-agent
-poppler-glib
-power-profiles-daemon
-prismlauncher
-protontricks
-python-pywal
-qt5-wayland
-qt6-wayland
-qt6ct
-quickshell
-rate-mirrors
-reflector
-retro-gtk
-retroarch
-retroarch-assets-glui
-retroarch-assets-ozone
-retroarch-assets-xmb
-rofi
-slurp
-smartmontools
-steam
-steam-devices
-swappy
-tesseract
-tesseract-data-eng
-thunar
-thunar-archive-plugin
-thunar-media-tags-plugin
-thunar-shares-plugin
-thunar-vcs-plugin
-thunar-volman
-timeshift
-ttf-jetbrains-mono-nerd
-ttf-noto-nerd
-tumbler
-unrar
-unzip
-vulkan-tools
-wget
-wine-gecko
-wine-mono
-wine-staging
-winetricks
-wl-clipboard
-wtype
-xdg-desktop-portal-gtk
-xdg-desktop-portal-hyprland
-xdg-user-dirs
-zip
-zoxide
-zram-generator
-zsh
-zsh-autosuggestions
-zsh-completions
-zsh-syntax-highlighting
+# Explicitly-installed packages from the official repos.
+#
+# Install (the sed strips these comments -- pacman can't read them):
+#   sed 's/#.*//' packages/pacman.txt | sudo pacman -S --needed -
+#
+# Sections run most- to least- essential. Only "Hyprland desktop" and "Fonts"
+# are genuinely required for this config to work. Delete any section you don't
+# want -- no later section depends on an earlier one.
+
+# --- Base system -----------------------------------------------------------
+# MACHINE SPECIFIC. Review before installing: the kernel, bootloader and
+# filesystem tools here assume an AMD CPU + btrfs + GRUB/EFI setup.
+base                         # Minimal package set defining a basic Arch install
+base-devel                   # Basic tools to build Arch packages
+linux                        # The Linux kernel and modules
+linux-headers                # Kernel headers -- required by DKMS modules
+linux-firmware               # Firmware files for Linux
+amd-ucode                    # Microcode for AMD CPUs -- swap for intel-ucode on Intel
+grub                         # Bootloader
+grub-btrfs                   # Include btrfs snapshots in GRUB boot options
+os-prober                    # Detect other OSes on the drives (dual boot)
+efibootmgr                   # Modify the EFI boot manager
+btrfs-progs                  # Btrfs filesystem utilities
+ntfs-3g                      # NTFS driver -- read Windows partitions
+ntfsprogs                    # NTFS userspace utilities
+zram-generator               # Systemd generator for zram swap
+timeshift                    # System restore utility (btrfs snapshots)
+smartmontools                # Monitor S.M.A.R.T. drive health
+dmidecode                    # Read hardware info from the DMI table
+reflector                    # Retrieve and filter the latest mirror list
+rate-mirrors                 # Client-side mirror ranking
+pacman-contrib               # Extra pacman tools (paccache, checkupdates)
+pkgfile                      # Search for files in official repo packages
+man-db                       # Read man pages
+
+# --- NVIDIA ----------------------------------------------------------------
+# ONLY if you have an NVIDIA GPU. On AMD/Intel delete this whole section and
+# install mesa + vulkan-radeon (or vulkan-intel) instead.
+nvidia-open-dkms             # NVIDIA open kernel modules
+lib32-nvidia-utils           # NVIDIA driver utilities, 32-bit (Steam needs this)
+libva-nvidia-driver          # Hardware video decode via NVDEC
+lact                         # GPU config tool -- fan curves and undervolting
+vulkan-tools                 # Vulkan utilities (vulkaninfo, vkcube)
+lib32-vulkan-icd-loader      # Vulkan loader, 32-bit
+
+# --- Hyprland desktop ------------------------------------------------------
+# REQUIRED. This is what the config in this repo actually drives.
+hyprland                     # The Wayland compositor
+hyprlock                     # GPU-accelerated screen locker
+hyprpaper                    # Wallpaper daemon, IPC-controlled
+hyprpicker                   # Colour picker
+hyprpolkitagent              # Polkit authentication agent
+hyprsunset                   # Blue-light filter
+quickshell                   # QtQuick shell -- the bar, dock and launcher
+qt5-wayland                  # Wayland support for Qt5 apps
+qt6-wayland                  # Wayland support for Qt6 -- Quickshell needs this
+qt6ct                        # Qt6 theming
+xdg-desktop-portal-hyprland  # Portal backend -- screen sharing and capture
+xdg-desktop-portal-gtk       # Portal backend -- file pickers
+xdg-user-dirs                # Manage ~/Desktop, ~/Music and friends
+ly                           # TUI display manager (login screen)
+rofi                         # App launcher / dmenu replacement
+dunst                        # Notification daemon
+wl-clipboard                 # Wayland copy/paste (wl-copy, wl-paste)
+cliphist                     # Clipboard history -- backs the bar's clipboard widget
+wtype                        # Synthesise keystrokes on Wayland
+grim                         # Screen capture -- used by the screenshot script
+slurp                        # Region select -- used by the screenshot script
+swappy                       # Screenshot annotation
+matugen                      # Material You colour generation -- the theming pipeline
+python-pywal                 # Palette generation for terminal colours
+nwg-look                     # GTK settings editor for wlroots compositors
+nwg-displays                 # Monitor layout editor for Hyprland
+gnome-themes-extra           # Adwaita theme files GTK apps expect
+polkit-kde-agent             # Fallback polkit UI
+
+# --- Fonts -----------------------------------------------------------------
+# REQUIRED. The bar and terminal use Nerd Font glyphs; without these you get
+# tofu boxes everywhere.
+noto-fonts                   # Base Noto fonts
+noto-fonts-emoji             # Colour emoji
+ttf-jetbrains-mono-nerd      # JetBrains Mono, Nerd Font patched -- terminal and bar
+ttf-noto-nerd                # Noto, Nerd Font patched
+otf-font-awesome             # Icon font
+
+# --- Audio, network, power -------------------------------------------------
+pipewire-pulse               # PulseAudio replacement
+pipewire-session-manager     # PipeWire session manager
+pamixer                      # CLI volume control -- used by the bar
+pavucontrol                  # GUI volume control
+playerctl                    # MPRIS media control -- used by the bar
+networkmanager               # Network connection manager
+networkmanager-dmenu         # Network picker via rofi
+nm-connection-editor         # GUI network editor
+bluez                        # Bluetooth stack -- the controller script needs it
+power-profiles-daemon        # Power profile switching over D-Bus
+libayatana-appindicator      # Tray icon support for some apps
+
+# --- Terminal and shell ----------------------------------------------------
+alacritty                    # GPU-accelerated terminal
+zsh                          # The shell .zshrc configures
+zsh-autosuggestions          # Fish-like autosuggestions
+zsh-completions              # Extra completions
+zsh-syntax-highlighting      # Command syntax highlighting
+micro                        # Terminal text editor
+htop                         # Interactive process viewer
+fastfetch                    # System info display
+fzf                          # Fuzzy finder
+zoxide                       # Smarter cd
+jq                           # JSON processor -- used by several scripts
+git                          # Version control
+wget                         # Download files
+inotify-tools                # Watch files for changes -- used by scripts
+bash-completion              # Bash completions
+
+# --- Files, images, archives -----------------------------------------------
+thunar                       # File manager
+thunar-archive-plugin        # Archive operations in the context menu
+thunar-media-tags-plugin     # Media tag editing
+thunar-shares-plugin         # Share folders over Samba
+thunar-vcs-plugin            # Git/SVN integration
+thunar-volman                # Auto-mount removable drives
+tumbler                      # Thumbnail service
+gvfs                         # Virtual filesystem -- trash, mounts, network
+ffmpegthumbnailer            # Video thumbnails
+poppler-glib                 # PDF thumbnails
+libgsf                       # Structured file format support
+libopenraw                   # RAW photo decoding
+imagemagick                  # Image manipulation -- used by the wallpaper script
+imv                          # Lightweight image viewer
+loupe                        # GNOME image viewer
+file-roller                  # Archive manager GUI
+7zip                         # High-ratio archiver
+unzip                        # Extract .zip
+zip                          # Create .zip
+unrar                        # Extract .rar
+gparted                      # Partition editor
+
+# --- Gaming ----------------------------------------------------------------
+# OPTIONAL. Delete the whole section if this isn't a gaming machine -- only the
+# game-mode and steam-launch-options scripts touch any of it.
+steam                        # Valve's game platform
+steam-devices                # udev rules for controllers and VR hardware
+lutris                       # Open gaming platform for non-Steam games
+gamemode                     # Temporarily apply performance optimisations
+lib32-gamemode               # gamemode, 32-bit
+gamescope                    # Micro-compositor for games -- scaling, framerate limiting
+mangohud                     # FPS / temperature / load overlay
+lib32-mangohud               # MangoHud, 32-bit
+goverlay                     # GUI to configure MangoHud
+protontricks                 # Winetricks for Proton games
+wine-staging                 # Run Windows programs, staging branch
+wine-gecko                   # Wine's Internet Explorer replacement
+wine-mono                    # Wine's .NET replacement
+winetricks                   # Install Windows runtime libraries into Wine
+
+# --- Emulation -------------------------------------------------------------
+# OPTIONAL. Nothing in this repo depends on any of it.
+retroarch                    # Libretro frontend
+retroarch-assets-ozone       # Ozone UI assets
+retroarch-assets-xmb         # XMB UI assets
+retroarch-assets-glui        # GLUI UI assets
+retro-gtk                    # GTK libretro frontend toolkit
+libretro-core-info           # Core metadata
+libretro-overlays            # Overlay collection
+libretro-shaders-slang       # Shader collection
+libretro-beetle-psx-hw       # PlayStation core
+libretro-genesis-plus-gx     # Sega Master System / Game Gear / Mega Drive / CD core
+libretro-mgba                # Game Boy Advance core
+libretro-mupen64plus-next    # Nintendo 64 core
+libretro-nestopia            # NES core
+libretro-ppsspp              # PSP core
+libretro-snes9x              # SNES core
+mame-tools                   # MAME command-line tools
+prismlauncher                # Minecraft launcher
+
+# --- Media and misc --------------------------------------------------------
+# OPTIONAL.
+obs-studio                   # Screen recording and streaming
+obs-studio-plugin-browser    # Browser source for OBS
+hypnotix                     # IPTV player
+tesseract                    # OCR engine -- used by the screenshot script's text grab
+tesseract-data-eng           # OCR English language data
+jdk-openjdk                  # Java runtime -- PrismLauncher needs it

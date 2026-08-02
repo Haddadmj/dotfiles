@@ -1,4 +1,4 @@
-/* GENERATED from the current wallpaper by matugen -- do not edit by hand.
+/* NEUTRAL FALLBACK -- seeded by install.sh only when no themed file exists.
    Edit ~/.config/matugen/templates/wlogout.css instead, then run: wallpaper
 
    Styles the power menu (~/.local/bin/powermenu, SUPER + M). Buttons are
@@ -15,16 +15,16 @@
 /* Dimmed desktop behind the buttons. alpha() is a GTK CSS function, so the
    translucency survives whatever hex matugen writes here. */
 window {
-    background-color: alpha(#121318, 0.82);
+    background-color: alpha(#131416, 0.82);
 }
 
 button {
     margin: 0;
     padding: 0;
     border-radius: 22px;
-    border: 2px solid #44464f;
-    background-color: #0c0e13;
-    color: #e2e2e9;
+    border: 2px solid #4a4d52;
+    background-color: #0b0c0e;
+    color: #e3e4e6;
 
     /* wlogout pins the caption at 90% of the button height, so the icon sits
        above it rather than dead centre. */
@@ -42,9 +42,9 @@ button {
 button:hover,
 button:focus,
 button:active {
-    background-color: #b1c6ff;
-    color: #162e60;
-    border-color: #b1c6ff;
+    background-color: #9db4c8;
+    color: #16242c;
+    border-color: #9db4c8;
     outline-style: none;
 }
 
@@ -57,7 +57,7 @@ button:active {
 #reboot:focus,
 #reboot:active {
     background-color: #ffb4ab;
-    color: #690005;
+    color: #601410;
     border-color: #ffb4ab;
 }
 
