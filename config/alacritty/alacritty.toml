@@ -1,0 +1,19 @@
+[general]
+# Wallpaper-derived colours. Regenerate with: wallpaper
+import = ["~/.config/alacritty/colors.toml"]
+
+[window]
+opacity = 0.75
+
+[font]
+size = 14.0
+
+
+[font.normal]
+family = "JetBrainsMono Nerd Font"
+style = "Regular"
+
+[[keyboard.bindings]]
+key = "Return"
+mods = "Shift"
+chars = "\u001B\r"

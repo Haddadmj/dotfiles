@@ -1,0 +1,72 @@
+/* GENERATED from the current wallpaper by matugen -- do not edit by hand.
+   Edit ~/.config/matugen/templates/wlogout.css instead, then run: wallpaper
+
+   Styles the power menu (~/.local/bin/powermenu, SUPER + M). Buttons are
+   selected by their "label" in ~/.config/wlogout/layout. */
+
+* {
+    background-image: none;
+    box-shadow: none;
+    font-family: "JetBrainsMono Nerd Font", monospace;
+    font-size: 17px;
+    font-weight: 500;
+}
+
+/* Dimmed desktop behind the buttons. alpha() is a GTK CSS function, so the
+   translucency survives whatever hex matugen writes here. */
+window {
+    background-color: alpha({{colors.surface.default.hex}}, 0.82);
+}
+
+button {
+    margin: 0;
+    padding: 0;
+    border-radius: 22px;
+    border: 2px solid {{colors.outline_variant.default.hex}};
+    background-color: {{colors.surface_container_lowest.default.hex}};
+    color: {{colors.on_surface.default.hex}};
+
+    /* wlogout pins the caption at 90% of the button height, so the icon sits
+       above it rather than dead centre. */
+    background-repeat: no-repeat;
+    background-position: center 38%;
+    background-size: 34%;
+
+    transition: background-color 150ms ease, color 150ms ease,
+                border-color 150ms ease;
+}
+
+/* Keyboard focus and mouse hover are the same state here: the menu is driven
+   by single letters as often as by the pointer, so both have to read as "this
+   is the one that will fire". */
+button:hover,
+button:focus,
+button:active {
+    background-color: {{colors.primary.default.hex}};
+    color: {{colors.on_primary.default.hex}};
+    border-color: {{colors.primary.default.hex}};
+    outline-style: none;
+}
+
+/* The two that Escape cannot take back get the error colour instead of the
+   accent, so a mis-aimed click is obvious before it lands. */
+#shutdown:hover,
+#shutdown:focus,
+#shutdown:active,
+#reboot:hover,
+#reboot:focus,
+#reboot:active {
+    background-color: {{colors.error.default.hex}};
+    color: {{colors.on_error.default.hex}};
+    border-color: {{colors.error.default.hex}};
+}
+
+/* Symbolic icons from the active icon theme (breeze-dark). GTK repaints a
+   symbolic icon in the widget's `color`, which is what makes them follow the
+   accent on hover -- a plain url() would keep the file's own fill and stay
+   invisible on a dark background. */
+#lock     { background-image: -gtk-icontheme("system-lock-screen-symbolic"); }
+#suspend  { background-image: -gtk-icontheme("system-suspend-symbolic"); }
+#logout   { background-image: -gtk-icontheme("system-log-out-symbolic"); }
+#reboot   { background-image: -gtk-icontheme("system-reboot-symbolic"); }
+#shutdown { background-image: -gtk-icontheme("system-shutdown-symbolic"); }

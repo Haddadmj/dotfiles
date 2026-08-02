@@ -1,0 +1,35 @@
+/* GENERATED from the current wallpaper by matugen -- do not edit by hand.
+   Regenerate with:  wallpaper [/path/to/image]
+   Imported by gtk-3.0/gtk.css and gtk-4.0/gtk.css. */
+
+@define-color accent_color #b1c6ff;
+@define-color accent_bg_color #b1c6ff;
+@define-color accent_fg_color #162e60;
+
+@define-color theme_bg_color #121318;
+@define-color theme_fg_color #e2e2e9;
+@define-color theme_base_color #1e1f25;
+@define-color theme_text_color #e2e2e9;
+
+@define-color theme_selected_bg_color #b1c6ff;
+@define-color theme_selected_fg_color #162e60;
+
+@define-color window_bg_color #121318;
+@define-color window_fg_color #e2e2e9;
+@define-color view_bg_color #1e1f25;
+@define-color view_fg_color #e2e2e9;
+@define-color headerbar_bg_color #1e1f25;
+@define-color headerbar_fg_color #e2e2e9;
+@define-color popover_bg_color #1e1f25;
+@define-color popover_fg_color #e2e2e9;
+@define-color card_bg_color #1e1f25;
+@define-color card_fg_color #e2e2e9;
+@define-color sidebar_bg_color #1e1f25;
+@define-color sidebar_fg_color #e2e2e9;
+
+@define-color borders #44464f;
+@define-color unfocused_borders #44464f;
+@define-color insensitive_fg_color #8f9099;
+
+@define-color error_color #ffb4ab;
+@define-color warning_color #e0bbdd;

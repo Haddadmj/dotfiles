@@ -1,0 +1,189 @@
+#!/usr/bin/env bash
+# Connect / disconnect / pair a Bluetooth game controller.
+set -uo pipefail
+
+# Name patterns that identify a controller in `bluetoothctl devices` output.
+PATTERNS='DualSense|DualShock|Wireless Controller|Xbox Wireless Controller|8BitDo|Pro Controller|Nintendo Switch|Stadia'
+
+RETRIES=5
+SCAN_SECS=15
+
+die() { printf '\033[31m%s\033[0m\n' "$*" >&2; exit 1; }
+info() { printf '\033[36m%s\033[0m\n' "$*"; }
+ok() { printf '\033[32m%s\033[0m\n' "$*"; }
+warn() { printf '\033[33m%s\033[0m\n' "$*"; }
+
+bt() { bluetoothctl "$@" 2>/dev/null; }
+
+ensure_adapter() {
+	command -v bluetoothctl >/dev/null || die "bluetoothctl not found (install bluez-utils)"
+	if ! systemctl is-active --quiet bluetooth; then
+		info "Starting bluetooth service..."
+		systemctl start bluetooth || die "could not start bluetooth.service"
+		sleep 1
+	fi
+	bt show | grep -q "Powered: yes" || { info "Powering on adapter..."; bt power on >/dev/null; sleep 1; }
+}
+
+# Print "MAC<TAB>Name" for each paired device matching PATTERNS.
+known_controllers() {
+	bt devices | grep -E "$PATTERNS" | sed -E 's/^Device ([0-9A-F:]{17}) (.*)$/\1\t\2/'
+}
+
+is_connected() {
+	bt info "$1" | grep -q "Connected: yes"
+}
+
+# BlueZ's input plugin rejects HID from a paired-but-unbonded device. The pad
+# stays unbonded here because it holds a link key from the Windows dual-boot.
+check_bonded_policy() {
+	grep -qs "^ClassicBondedOnly=false" /etc/bluetooth/input.conf && return 0
+	warn "ClassicBondedOnly is not disabled in /etc/bluetooth/input.conf —"
+	warn "HID will be refused with 'Rejected connection from !bonded device'."
+}
+
+pick_controller() {
+	local list count
+	list=$(known_controllers)
+	[ -n "$list" ] || return 1
+	count=$(printf '%s\n' "$list" | wc -l)
+	if [ "$count" -eq 1 ] || [ -z "${CONTROLLER_MAC:-}" ]; then
+		printf '%s\n' "$list" | head -n1
+	else
+		printf '%s\n' "$list" | grep -i "^$CONTROLLER_MAC" | head -n1
+	fi
+}
+
+cmd_connect() {
+	ensure_adapter
+	local entry mac name
+	entry=$(pick_controller) || {
+		warn "No paired controller found."
+		info "Run: $(basename "$0") pair"
+		exit 1
+	}
+	mac=${entry%%$'\t'*}
+	name=${entry#*$'\t'}
+
+	if is_connected "$mac"; then
+		ok "$name already connected ($mac)"
+		exit 0
+	fi
+
+	info "Connecting to $name ($mac)..."
+	bt trust "$mac" >/dev/null
+
+	for i in $(seq 1 "$RETRIES"); do
+		if bt connect "$mac" | grep -q "Connection successful"; then
+			sleep 1
+			is_connected "$mac" && { ok "Connected: $name"; exit 0; }
+		fi
+		[ "$i" -lt "$RETRIES" ] && { printf '  attempt %d/%d failed, retrying...\n' "$i" "$RETRIES"; sleep 2; }
+	done
+
+	warn "Could not connect to $name. Last bluetoothd error:"
+	journalctl -u bluetooth --since "1 min ago" --no-pager 2>/dev/null |
+		grep -oE "(Host is down.*|Permission denied.*|Rejected connection.*)" | tail -1 | sed 's/^/    /'
+	cat <<-EOF
+	  'Host is down'         -> the pad is asleep; press the PS / Xbox button.
+	  'Rejected .. !bonded'  -> set ClassicBondedOnly=false in /etc/bluetooth/input.conf
+	  still stuck            -> $(basename "$0") pair
+	EOF
+	exit 1
+}
+
+cmd_disconnect() {
+	ensure_adapter
+	local entry mac name found=0
+	while IFS= read -r entry; do
+		[ -n "$entry" ] || continue
+		mac=${entry%%$'\t'*}
+		name=${entry#*$'\t'}
+		if is_connected "$mac"; then
+			bt disconnect "$mac" >/dev/null
+			ok "Disconnected: $name"
+			found=1
+		fi
+	done <<< "$(known_controllers)"
+	[ "$found" -eq 1 ] || info "No controller was connected."
+}
+
+cmd_pair() {
+	ensure_adapter
+	check_bonded_policy
+
+	# A bond saved here goes stale if the controller is later paired to another
+	# host (Windows dual-boot, PS5, phone) — that rewrites the key on the pad.
+	# Symptom is br-connection-create-socket on connect. Drop it and start clean.
+	local stale
+	while IFS= read -r stale; do
+		[ -n "$stale" ] || continue
+		bt remove "${stale%%$'\t'*}" >/dev/null
+	done <<< "$(known_controllers)"
+
+	cat <<-EOF
+
+	Hold the pairing combo until the light flashes FAST (a slow pulse means it is
+	only trying to reconnect — that will not show up in a scan):
+	  DualSense/DualShock : hold CREATE (or SHARE) + PS together, ~5s
+	  Xbox                : hold the small pair button on top, ~5s
+	EOF
+	info "Scanning ${SCAN_SECS}s..."
+
+	bt --timeout "$SCAN_SECS" scan on >/dev/null
+
+	local entry mac name
+	entry=$(known_controllers | head -n1)
+	[ -n "$entry" ] || die "No controller found — it never advertised. Re-do the pairing combo (light must flash FAST) and run this again."
+
+	mac=${entry%%$'\t'*}
+	name=${entry#*$'\t'}
+	info "Found $name ($mac) — pairing..."
+
+	bt pair "$mac" >/dev/null
+	sleep 2
+	bt trust "$mac" >/dev/null
+	bt connect "$mac" >/dev/null
+	sleep 1
+
+	if is_connected "$mac"; then
+		ok "Paired and connected: $name"
+	else
+		warn "Paired but not connected. Try: $(basename "$0")"
+	fi
+}
+
+cmd_status() {
+	ensure_adapter
+	local entry mac name list
+	list=$(known_controllers)
+	[ -n "$list" ] || { info "No paired controllers."; exit 0; }
+	while IFS= read -r entry; do
+		[ -n "$entry" ] || continue
+		mac=${entry%%$'\t'*}
+		name=${entry#*$'\t'}
+		if is_connected "$mac"; then
+			ok "● $name  $mac"
+		else
+			printf '\033[90m○ %s  %s\033[0m\n' "$name" "$mac"
+		fi
+	done <<< "$list"
+}
+
+case "${1:-connect}" in
+	connect|on|c)     cmd_connect ;;
+	disconnect|off|d) cmd_disconnect ;;
+	pair|p)           cmd_pair ;;
+	status|s)         cmd_status ;;
+	-h|--help|help)
+		cat <<-EOF
+		Usage: $(basename "$0") [command]
+
+		  connect     (default) connect the paired controller
+		  disconnect  disconnect any connected controller
+		  pair        scan for and pair a new controller
+		  status      show paired controllers and their state
+		EOF
+		;;
+	*) die "Unknown command: $1  (try --help)" ;;
+esac

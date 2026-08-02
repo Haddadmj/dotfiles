@@ -1,0 +1,307 @@
+#!/usr/bin/env python3
+"""Set the same Steam launch options on every installed game.
+
+Steam has no global launch-options field -- the string lives per-app in
+localconfig.vdf, so applying one everywhere means editing that file. Steam
+keeps localconfig.vdf in memory and rewrites it on exit, so it must be closed
+before this runs or the changes are discarded.
+
+  steam-launch-options                     # apply the default below
+  steam-launch-options --list              # show what each game has now
+  steam-launch-options --dry-run           # print the diff, write nothing
+  steam-launch-options 'mangohud %command%'
+  steam-launch-options --clear             # remove launch options everywhere
+  steam-launch-options --all-users         # every profile, not just the last login
+
+Re-run it after installing a new game; only games that exist at run time are
+touched. Runtimes, Proton and redistributables are skipped, and the previous
+localconfig.vdf is kept as a timestamped .bak.
+"""
+
+import os
+import re
+import shutil
+import subprocess
+import sys
+import time
+
+DEFAULT_OPTIONS = "gamemoderun mangohud %command%"
+
+STEAM_ROOT = os.path.expanduser("~/.local/share/Steam")
+
+# Runtimes, compat tools and redistributables live in the library alongside
+# games and must not get launch options.
+TOOL_NAME_RE = re.compile(
+    r"^(Proton|Steam Linux Runtime|Steamworks Common Redistributables|"
+    r"SteamVR|Steam Controller|.*\bRuntime\b)",
+    re.I,
+)
+
+
+def die(msg):
+    print(f"error: {msg}", file=sys.stderr)
+    sys.exit(1)
+
+
+def steam_is_running():
+    return subprocess.run(["pgrep", "-x", "steam"], capture_output=True).returncode == 0
+
+
+def library_paths():
+    """Every Steam library folder, from the master libraryfolders.vdf."""
+    vdf = os.path.join(STEAM_ROOT, "config", "libraryfolders.vdf")
+    if not os.path.exists(vdf):
+        return [STEAM_ROOT]
+    with open(vdf, errors="ignore") as fh:
+        paths = re.findall(r'"path"\s+"([^"]+)"', fh.read())
+    return paths or [STEAM_ROOT]
+
+
+def installed_games():
+    """{appid: name} for installed apps that are actual games."""
+    games = {}
+    for lib in library_paths():
+        steamapps = os.path.join(lib, "steamapps")
+        if not os.path.isdir(steamapps):
+            continue
+        for entry in sorted(os.listdir(steamapps)):
+            if not (entry.startswith("appmanifest_") and entry.endswith(".acf")):
+                continue
+            with open(os.path.join(steamapps, entry), errors="ignore") as fh:
+                acf = fh.read()
+            appid = re.search(r'"appid"\s+"(\d+)"', acf)
+            name = re.search(r'"name"\s+"([^"]*)"', acf)
+            if not appid:
+                continue
+            label = name.group(1) if name else appid.group(1)
+            if TOOL_NAME_RE.match(label):
+                continue
+            games[appid.group(1)] = label
+    return games
+
+
+STEAMID64_BASE = 76561197960265728
+
+
+def known_accounts():
+    """{account_id: (account_name, login_timestamp)} from loginusers.vdf."""
+    vdf = os.path.join(STEAM_ROOT, "config", "loginusers.vdf")
+    accounts = {}
+    if not os.path.exists(vdf):
+        return accounts
+    with open(vdf, errors="ignore") as fh:
+        text = fh.read()
+    for m in re.finditer(r'"(765611\d+)"\s*\n\s*\{(.*?)\n\t\}', text, re.S):
+        body = m.group(2)
+        name = re.search(r'"AccountName"\s+"([^"]*)"', body)
+        stamp = re.search(r'"Timestamp"\s+"(\d+)"', body)
+        accounts[str(int(m.group(1)) - STEAMID64_BASE)] = (
+            name.group(1) if name else "?",
+            int(stamp.group(1)) if stamp else 0,
+        )
+    return accounts
+
+
+def user_configs(all_users):
+    """(label, path) per Steam profile, most recently logged in first."""
+    base = os.path.join(STEAM_ROOT, "userdata")
+    if not os.path.isdir(base):
+        die(f"no Steam userdata at {base}")
+    accounts = known_accounts()
+    found = []
+    for uid in os.listdir(base):
+        cfg = os.path.join(base, uid, "config", "localconfig.vdf")
+        if not os.path.exists(cfg):
+            continue
+        # Prefer Steam's own record of the last login; mtime is a weak proxy
+        # because anything touching the file reorders it.
+        name, stamp = accounts.get(uid, ("?", 0))
+        found.append((stamp or os.path.getmtime(cfg), f"{name} ({uid})", cfg))
+    if not found:
+        die("no localconfig.vdf found -- has Steam been logged into?")
+    found.sort(reverse=True)
+    if not all_users and len(found) > 1:
+        print(f"note: {len(found)} Steam accounts found, using the most recent "
+              f"({found[0][1]}); pass --all-users for all of them\n")
+    return found if all_users else found[:1]
+
+
+def find_block(text, key, start=0):
+    """Byte range of the body of "key" { ... }, excluding the braces."""
+    at = text.find(f'"{key}"', start)
+    while at != -1:
+        brace = text.find("{", at)
+        if brace == -1:
+            return None
+        # Reject a match where something other than whitespace sits between the
+        # key and its brace -- that would be "key" "value" followed by a block.
+        if text[at + len(key) + 2 : brace].strip() == "":
+            depth, i = 0, brace
+            while i < len(text):
+                if text[i] == "{":
+                    depth += 1
+                elif text[i] == "}":
+                    depth -= 1
+                    if depth == 0:
+                        return (brace + 1, i)
+                i += 1
+            return None
+        at = text.find(f'"{key}"', at + 1)
+    return None
+
+
+def apps_block(text):
+    """The apps section under UserLocalConfigStore/Software/Valve/Steam."""
+    span = (0, len(text))
+    for key in ("UserLocalConfigStore", "Software", "Valve", "Steam", "apps"):
+        found = find_block(text, key, span[0])
+        if not found or found[0] > span[1]:
+            die(f'could not locate the "{key}" section in localconfig.vdf')
+        span = found
+    return span
+
+
+def app_entries(text, span):
+    """{appid: (body_start, body_end)} for each app inside the apps block."""
+    entries = {}
+    i = span[0]
+    while i < span[1]:
+        m = re.compile(r'"(\d+)"\s*\n\s*\{').search(text, i, span[1])
+        if not m:
+            break
+        depth, j = 0, text.index("{", m.start())
+        body_start = j + 1
+        while j < span[1]:
+            if text[j] == "{":
+                depth += 1
+            elif text[j] == "}":
+                depth -= 1
+                if depth == 0:
+                    break
+            j += 1
+        entries[m.group(1)] = (body_start, j)
+        i = j + 1
+    return entries
+
+
+def vdf_escape(value):
+    return value.replace("\\", "\\\\").replace('"', '\\"')
+
+
+def indent_of(text, pos):
+    """Leading whitespace of the line containing pos."""
+    line_start = text.rfind("\n", 0, pos) + 1
+    return re.match(r"[\t ]*", text[line_start:]).group(0)
+
+
+def apply(text, appid, options):
+    """Set (or remove, if options is None) LaunchOptions for one app."""
+    span = apps_block(text)
+    entries = app_entries(text, span)
+
+    if appid in entries:
+        start, end = entries[appid]
+        body = text[start:end]
+        existing = re.search(r'[\t ]*"LaunchOptions"\s+"(?:[^"\\]|\\.)*"\n', body)
+        if existing:
+            if options is None:
+                return text[:start] + body[: existing.start()] + body[existing.end() :] + text[end:]
+            pad = indent_of(body, existing.start()) or indent_of(text, start) + "\t"
+            line = f'{pad}"LaunchOptions"\t\t"{vdf_escape(options)}"\n'
+            return text[:start] + body[: existing.start()] + line + body[existing.end() :] + text[end:]
+        if options is None:
+            return text
+        pad = indent_of(text, end) + "\t"
+        line = f'\n{pad}"LaunchOptions"\t\t"{vdf_escape(options)}"'
+        return text[:start] + line + text[start:]
+
+    # Game has never been launched, so it has no entry at all -- create one
+    # just above the closing brace of the apps block.
+    if options is None:
+        return text
+    pad = indent_of(text, span[1])
+    inner = pad + "\t"
+    block = (
+        f'{inner}"{appid}"\n{inner}{{\n'
+        f'{inner}\t"LaunchOptions"\t\t"{vdf_escape(options)}"\n'
+        f"{inner}}}\n"
+    )
+    # The closing brace normally sits alone on its own line; insert before that
+    # whole line so the new entry lands at the right depth.
+    close_line = text.rfind("\n", 0, span[1]) + 1
+    if text[close_line : span[1]].strip() == "":
+        return text[:close_line] + block + text[close_line:]
+    return text[: span[1]] + "\n" + block + pad + text[span[1] :]
+
+
+def current_options(text, appid):
+    span = apps_block(text)
+    entries = app_entries(text, span)
+    if appid not in entries:
+        return None
+    start, end = entries[appid]
+    m = re.search(r'"LaunchOptions"\s+"((?:[^"\\]|\\.)*)"', text[start:end])
+    return m.group(1) if m else None
+
+
+def main():
+    args = [a for a in sys.argv[1:]]
+    dry_run = "--dry-run" in args
+    do_list = "--list" in args
+    clear = "--clear" in args
+    all_users = "--all-users" in args
+    positional = [a for a in args if not a.startswith("--")]
+
+    unknown = [a for a in args if a.startswith("--") and a not in
+               ("--dry-run", "--list", "--clear", "--all-users")]
+    if unknown:
+        die(f"unknown option: {unknown[0]}\n\n{__doc__}")
+
+    options = None if clear else (positional[0] if positional else DEFAULT_OPTIONS)
+
+    games = installed_games()
+    if not games:
+        die("no installed games found")
+
+    for _rank, uid, cfg in user_configs(all_users):
+        with open(cfg, errors="ignore") as fh:
+            text = fh.read()
+
+        if do_list:
+            print(f"{uid}:")
+            for appid, name in sorted(games.items(), key=lambda kv: kv[1].lower()):
+                print(f"  {name} ({appid})\n    {current_options(text, appid) or '(none)'}")
+            continue
+
+        if steam_is_running() and not dry_run:
+            die("Steam is running -- close it first, or it will overwrite these "
+                "changes from memory when it exits")
+
+        changed = []
+        for appid, name in sorted(games.items(), key=lambda kv: kv[1].lower()):
+            before = current_options(text, appid)
+            text = apply(text, appid, options)
+            after = current_options(text, appid)
+            if before != after:
+                changed.append((name, before, after))
+
+        print(f"{uid} ({os.path.basename(cfg)}):")
+        if not changed:
+            print("  already up to date")
+            continue
+        for name, before, after in changed:
+            print(f"  {name}\n    - {before or '(none)'}\n    + {after or '(none)'}")
+
+        if dry_run:
+            print("  --dry-run: nothing written")
+            continue
+
+        backup = f"{cfg}.bak-{time.strftime('%Y%m%d-%H%M%S')}"
+        shutil.copy2(cfg, backup)
+        with open(cfg, "w") as fh:
+            fh.write(text)
+        print(f"  written (backup: {backup})")
+
+
+if __name__ == "__main__":
+    main()

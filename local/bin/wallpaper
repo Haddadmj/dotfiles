@@ -1,0 +1,447 @@
+#!/usr/bin/env bash
+# Set the wallpaper and retheme the desktop to match it.
+#
+#   wallpaper                  re-apply the current wallpaper (e.g. after login)
+#   wallpaper /path/to/img     set that image
+#   wallpaper -r [FOLDER]      pick a random one from FOLDER (default: sfw)
+#   wallpaper -d QUERY         download a match from wallhaven.cc and set it
+#
+# Options for -d:
+#   -n COUNT   download COUNT new wallpapers at once, in parallel (default: 1).
+#              The first one to finish downloading is the one that gets set.
+#   -c LIST    categories to search, comma separated: general, anime, people
+#              (default: general,anime)
+#   -p LIST    which ratings to search, comma separated: sfw, sketchy, nsfw
+#              (default: sfw). This is an exact set -- `-p nsfw` returns nsfw
+#              only. Add a trailing + for "that and tamer": `-p sketchy+` is
+#              the same as `-p sfw,sketchy`. Anything past sfw needs an API key.
+#   -R WxH     only accept images at least this big (default: largest monitor)
+#   -C COLOUR  only images built around this colour: a hex like '#663399', or
+#              'auto' to reuse the accent of the wallpaper currently applied.
+#              Wallhaven only filters on 32 fixed swatches, so the colour is
+#              snapped to the nearest one and the snap is printed.
+#
+# QUERY is a wallhaven search: bare words match a tag fuzzily, +one +two needs
+# both, -tag excludes, id:123 is an exact tag, like:abc1de finds similar.
+#
+# Hits are filed by the rating wallhaven itself gave them, not by the -p ceiling
+# that let them through, so the library lays out as
+#
+#   <wallpaper dir>/{sfw,sketchy,nsfw}/<query>-<wallhaven id>.<ext>
+#
+# and -r reads one of those folders: `wallpaper -r`, `wallpaper -r nsfw`, or
+# `wallpaper -r /any/other/path`. Anything already saved is never picked twice,
+# so repeat runs grow the library rather than re-downloading it.
+#
+#   wallpaper -d 'cyberpunk city' -R 3840x2160
+#   wallpaper -d '+dark +minimal -anime' -c general -n 10
+#   wallpaper -d '' -C auto              # a new wallpaper, same colours as now
+#
+# The API key is read from $WALLHAVEN_API_KEY, falling back to
+# ~/.config/wallpaper/wallhaven-key.
+#
+# Retheming covers Quickshell, Hyprland borders, GTK 3/4 and alacritty.
+set -euo pipefail
+
+WALLPAPER_DIR="${WALLPAPER_DIR:-$HOME/Pictures/Wallpapers}"
+STATE_DIR="$HOME/.cache/wallpaper-theme"
+STATE="$STATE_DIR/current"
+PALETTE="$STATE_DIR/matugen.json"
+HELPER="$HOME/.local/share/wallpaper-theme/gen-terminal.py"
+KEY_FILE="${WALLHAVEN_KEY_FILE:-$HOME/.config/wallpaper/wallhaven-key}"
+API="https://wallhaven.cc/api/v1"
+MAX_PARALLEL="${WALLPAPER_MAX_PARALLEL:-8}"
+
+mkdir -p "$STATE_DIR"
+
+die() { echo "wallpaper: $*" >&2; exit 1; }
+
+# The header comment above is the help text -- print it up to the first line
+# that is no longer a comment, so the two can't drift apart.
+usage() { sed -n '2,${/^#/!q;s/^# \?//;p}' "$0"; }
+
+# ---- wallhaven ------------------------------------------------------------
+# Categories and purity are three on/off flags each, in the order the API
+# documents them: general/anime/people and sfw/sketchy/nsfw.
+parse_categories() {
+    local c g=0 a=0 p=0 list
+    IFS=',' read -ra list <<<"$1"
+    for c in "${list[@]}"; do
+        case "$c" in
+            general|g) g=1 ;;
+            anime|a)   a=1 ;;
+            people|p)  p=1 ;;
+            *) die "unknown category '$c' -- pick from general, anime, people" ;;
+        esac
+    done
+    [ "$g$a$p" != 000 ] || die "-c needs at least one category"
+    categories="$g$a$p"
+}
+
+# Read as an exact set: `-p nsfw` means nsfw and nothing else, `-p sketchy,nsfw`
+# means those two. Wallhaven's pool is overwhelmingly sfw, so a ceiling here
+# would quietly answer "nsfw" with a screen full of sfw. A trailing + asks for
+# the ceiling on purpose -- `-p sketchy+` is sketchy and anything tamer.
+parse_purity() {
+    local spec="$1" p s=0 k=0 n=0
+    local -a list
+
+    if [ "${spec: -1}" = + ]; then
+        case "${spec%+}" in
+            sfw)     purity=100 ;;
+            sketchy) purity=110 ;;
+            nsfw)    purity=111 ;;
+            *) die "unknown purity '${spec%+}' -- pick from sfw, sketchy, nsfw" ;;
+        esac
+        return
+    fi
+
+    IFS=',' read -ra list <<<"$spec"
+    for p in "${list[@]}"; do
+        case "$p" in
+            sfw)     s=1 ;;
+            sketchy) k=1 ;;
+            nsfw)    n=1 ;;
+            *) die "unknown purity '$p' -- pick from sfw, sketchy, nsfw" ;;
+        esac
+    done
+    [ "$s$k$n" != 000 ] || die "-p needs at least one purity level"
+    purity="$s$k$n"
+}
+
+# Wallhaven indexes every wallpaper against 32 fixed swatches and filters on
+# exact matches, so an arbitrary hex quietly returns nothing at all. Snap to the
+# nearest swatch instead, and say which one, so a surprising result set is
+# traceable to the colour rather than the query.
+WALLHAVEN_SWATCHES="660000 990000 cc0000 cc3333 ea4c88 993399 663399 333399
+                    0066cc 0099cc 66cccc 77cc33 669900 336600 666600 999900
+                    cccc33 ffff00 ffcc33 ff9900 ff6600 cc6633 996633 663300
+                    000000 999999 cccccc ffffff 424153"
+
+snap_colour() {
+    local want="$1"
+    if [ "$want" = auto ]; then
+        [ -f "$PALETTE" ] || die "-C auto needs a wallpaper applied first (no $PALETTE)"
+        want=$(jq -er '.colors.primary.default.color' "$PALETTE") \
+            || die "could not read an accent colour out of $PALETTE"
+    fi
+    want=${want#\#}
+    [[ $want =~ ^[0-9a-fA-F]{6}$ ]] || die "-C wants a 6-digit hex colour or 'auto', got '$1'"
+
+    # Matched in HSV, not RGB: matugen accents are typically pale, and plain
+    # RGB distance sends every pastel to white or grey, which is exactly the
+    # wallpaper you did not ask for. Hue carries the intent, so it dominates --
+    # unless the accent has no real hue to speak of, in which case only the
+    # neutral swatches are candidates and brightness decides.
+    colour=$(WANT="$want" SWATCHES="$WALLHAVEN_SWATCHES" python3 -c "
+import colorsys, os
+
+def hsv(c):
+    r, g, b = (int(c[i:i+2], 16) / 255 for i in (0, 2, 4))
+    return colorsys.rgb_to_hsv(r, g, b)
+
+want = hsv(os.environ['WANT'].lower())
+swatches = [(c, hsv(c)) for c in os.environ['SWATCHES'].split()]
+grey = [s for s in swatches if s[1][1] < 0.15]
+
+if want[1] < 0.15:
+    print(min(grey, key=lambda s: abs(s[1][2] - want[2]))[0])
+else:
+    def cost(s):
+        h, sa, v = s[1]
+        dh = abs(h - want[0])
+        dh = min(dh, 1 - dh)          # hue is a circle
+        return dh * 3 + abs(sa - want[1]) * 0.5 + abs(v - want[2]) * 0.5
+    print(min([s for s in swatches if s not in grey], key=cost)[0])
+")
+    [ -n "$colour" ] || die "could not match '$want' to a wallhaven swatch"
+    [ "$colour" = "$want" ] \
+        && echo ":: colour #$colour" \
+        || echo ":: colour #$want -> nearest wallhaven swatch #$colour"
+}
+
+api_key() {
+    if [ -n "${WALLHAVEN_API_KEY:-}" ]; then
+        printf '%s' "$WALLHAVEN_API_KEY"
+    elif [ -r "$KEY_FILE" ]; then
+        tr -d '[:space:]' < "$KEY_FILE"
+    fi
+}
+
+# Every wallpaper is named <slug>-<wallhaven id>.<ext>, so the ids already on
+# disk can be read straight back out of the filenames. Scanned recursively and
+# once per run: the purity folders mean a given id could be filed anywhere, and
+# a batch download asks "do I have this?" a few hundred times.
+declare -A OWNED_BY_ID=()
+scan_owned() {
+    local f base id
+    while IFS= read -r f; do
+        base=${f##*/}; base=${base%.*}; id=${base##*-}
+        [ -n "$id" ] && OWNED_BY_ID["$id"]="$f"
+    done < <(find -L "$WALLPAPER_DIR" -type f \
+                  \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' \) 2>/dev/null)
+}
+
+# One page of search results, as id<TAB>purity<TAB>url lines on stdout.
+search_page() {
+    local page="$1" json
+    local -a args
+
+    # sorting=random is what makes repeat runs interesting; without it every
+    # call would hand back the same first page.
+    args=( -sS --max-time 30 -G "$API/search"
+           --data-urlencode "q=$query"
+           --data-urlencode "categories=$categories"
+           --data-urlencode "purity=$purity"
+           --data-urlencode "atleast=$atleast"
+           --data-urlencode "sorting=random"
+           --data-urlencode "page=$page" )
+    [ -n "$colour" ] && args+=( --data-urlencode "colors=$colour" )
+    [ -n "$key" ] && args+=( -H "X-API-Key: $key" )
+
+    json=$(curl "${args[@]}") || die "could not reach wallhaven"
+    jq -e . >/dev/null 2>&1 <<<"$json" || die "wallhaven returned a non-JSON reply"
+    if [ "$(jq -r 'has("error")' <<<"$json")" = true ]; then
+        die "wallhaven: $(jq -r '.error' <<<"$json")"
+    fi
+    jq -r '.data[] | "\(.id)\t\(.purity)\t\(.path)"' <<<"$json" | shuf
+}
+
+# Waits for download job $1 and files the result. Reads download()'s locals --
+# bash scopes those to everything it calls -- so the arrays stay in one place.
+reap() {
+    local i="$1"
+    if wait "${pids[i]}"; then
+        mv "${dests[i]}.part" "${dests[i]}"
+        done_files+=( "${dests[i]}" )
+    else
+        rm -f "${dests[i]}.part"
+        echo "   download of $(basename "${dests[i]}") failed" >&2
+    fi
+}
+
+# Sets $img to a freshly downloaded (or already owned) wallpaper, having pulled
+# $count new ones into the library.
+download() {
+    local key slug id rating url dest r page hit purity_dir
+    local -a picks owned pids dests done_files
+
+    for c in curl jq shuf; do
+        command -v "$c" >/dev/null || die "-d needs $c installed"
+    done
+    mkdir -p "$WALLPAPER_DIR"
+
+    key=$(api_key)
+    [ "$purity" = 100 ] || [ -n "$key" ] \
+        || die "purity above sfw needs an API key in $KEY_FILE"
+
+    echo ":: searching wallhaven for '$query'$([ "$count" -gt 1 ] && echo " (want $count)")"
+    scan_owned
+
+    slug=$(printf '%s' "$query" | tr '[:upper:]' '[:lower:]' \
+           | tr -cs 'a-z0-9' '-' | sed 's/^-*//; s/-*$//')
+    [ -n "$slug" ] || slug=wallhaven
+
+    # Collect $count hits that aren't already on disk, remembering the ones that
+    # are in case every hit turns out to be old news. A page holds 24 results,
+    # so a big -n (or a well-worn query) needs to walk a few of them.
+    picks=(); owned=()
+    local -A seen=()
+    page=1
+    while [ "${#picks[@]}" -lt "$count" ] && [ "$page" -le 8 ]; do
+        hit=0
+        while IFS= read -r r; do
+            hit=1
+            id=${r%%$'\t'*}
+            [ -n "${seen[$id]:-}" ] && continue
+            seen[$id]=1
+            if [ -n "${OWNED_BY_ID[$id]:-}" ]; then
+                owned+=( "${OWNED_BY_ID[$id]}" )
+            else
+                picks+=( "$r" )
+                [ "${#picks[@]}" -ge "$count" ] && break
+            fi
+        done < <(search_page "$page")
+        [ "$hit" = 1 ] || break
+        page=$((page + 1))
+    done
+
+    if [ "${#picks[@]}" -eq 0 ]; then
+        [ "${#owned[@]}" -gt 0 ] \
+            || die "nothing matched '$query'${colour:+ in #$colour} -- try a looser query, another -c/-C/-p, or a smaller -R"
+        echo "   every match is already downloaded -- reusing one"
+        img="${owned[0]}"
+        return
+    fi
+    [ "${#picks[@]}" -ge "$count" ] \
+        || echo "   only ${#picks[@]} new match(es) available for '$query'"
+
+    # Downloads overlap, but only MAX_PARALLEL at a time: wallhaven starts
+    # dropping connections somewhere north of twenty at once, and a -n 30 that
+    # loses a third of its images to that is worse than one that waits. They
+    # are reaped in order, so the wallpaper that gets set is the first *listed*
+    # pick rather than whichever curl won the race.
+    done_files=()
+    local reaped=0
+    for r in "${picks[@]}"; do
+        IFS=$'\t' read -r id rating url <<<"$r"
+        purity_dir="$WALLPAPER_DIR/$rating"
+        mkdir -p "$purity_dir"
+        dest="$purity_dir/$slug-$id.${url##*.}"
+        echo ":: downloading $id -> ${dest#"$WALLPAPER_DIR"/}"
+        curl -fsSL --max-time 120 -o "$dest.part" "$url" &
+        pids+=( $! )
+        dests+=( "$dest" )
+        while [ $(( ${#pids[@]} - reaped )) -ge "$MAX_PARALLEL" ]; do
+            reap "$reaped"; reaped=$((reaped + 1))
+        done
+    done
+    while [ "$reaped" -lt "${#pids[@]}" ]; do
+        reap "$reaped"; reaped=$((reaped + 1))
+    done
+
+    [ "${#done_files[@]}" -gt 0 ] || die "every download failed"
+    [ "${#done_files[@]}" -gt 1 ] \
+        && echo ":: downloaded ${#done_files[@]} wallpapers into $WALLPAPER_DIR"
+    img="${done_files[0]}"
+}
+
+# ---- pick the image -------------------------------------------------------
+mode=current
+img=
+query=
+categories=110
+purity=100
+atleast=
+want_colour=
+colour=
+count=1
+folder=
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -h|--help)     usage; exit 0 ;;
+        -r|--random)
+            # The folder is optional, so anything that could be an option is
+            # left for the next round instead of being eaten as a folder name.
+            mode=random; shift
+            if [ $# -ge 1 ] && [ "${1#-}" = "$1" ]; then folder="$1"; shift; fi ;;
+        -d|--download)
+            [ $# -ge 2 ] || die "-d needs a search query"
+            mode=download; query="$2"; shift 2 ;;
+        -n|--count)
+            [ $# -ge 2 ] || die "-n needs a count"
+            count="$2"; shift 2
+            [[ $count =~ ^[1-9][0-9]*$ ]] || die "-n wants a positive number, got '$count'" ;;
+        -c|--category|--categories)
+            [ $# -ge 2 ] || die "-c needs a category list"
+            parse_categories "$2"; shift 2 ;;
+        -p|--purity)
+            [ $# -ge 2 ] || die "-p needs a purity level"
+            parse_purity "$2"; shift 2 ;;
+        -R|--resolution)
+            [ $# -ge 2 ] || die "-R needs a WxH resolution"
+            atleast="$2"; shift 2 ;;
+        -C|--color|--colour)
+            [ $# -ge 2 ] || die "-C needs a hex colour or 'auto'"
+            want_colour="$2"; shift 2 ;;
+        -*) die "unknown option '$1' -- try --help" ;;
+        *)  mode=file; img="$1"; shift ;;
+    esac
+done
+
+case "$mode" in
+    random)
+        # A bare name is one of the purity folders; anything with a slash (or
+        # that exists as given) is taken as a path, so -r ~/Pictures/foo works.
+        dir="$WALLPAPER_DIR/${folder:-sfw}"
+        if [ -n "$folder" ] && { [ -d "$folder" ] || [[ $folder == */* ]]; }; then
+            dir="$folder"
+        fi
+        [ -d "$dir" ] \
+            || die "no such folder: $dir -- download something with -d first, or name another folder"
+        img=$(find -L "$dir" -type f \
+                   \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' \) \
+              | shuf -n1)
+        [ -n "$img" ] || die "no images found in $dir"
+        ;;
+    download)
+        # Default to the biggest monitor so a downloaded wallpaper is never
+        # upscaled by hyprpaper's cover fit.
+        if [ -z "$atleast" ]; then
+            atleast=$(hyprctl monitors -j 2>/dev/null \
+                      | jq -er 'max_by(.width * .height) | "\(.width)x\(.height)"') \
+                || atleast=1920x1080
+        fi
+        [[ $atleast =~ ^[0-9]+x[0-9]+$ ]] || die "-R wants a WxH resolution, e.g. 2560x1440"
+        [ -n "$want_colour" ] && snap_colour "$want_colour"
+        download
+        ;;
+    current)
+        [ -f "$STATE" ] || die "no wallpaper set yet -- pass an image path"
+        img=$(cat "$STATE")
+        ;;
+esac
+
+[ -f "$img" ] || die "no such file: $img"
+img=$(realpath "$img")
+printf '%s' "$img" > "$STATE"
+
+echo ":: wallpaper -> $(basename "$img")"
+
+# ---- set it ---------------------------------------------------------------
+# Written in hyprpaper 0.8's section syntax (the old flat preload=/wallpaper=
+# keys are gone). This is what a fresh hyprpaper start reads; the IPC call
+# below is only so the change lands immediately.
+cat > "$HOME/.config/hypr/hyprpaper.conf" <<EOF
+# GENERATED by the \`wallpaper\` script -- do not edit by hand.
+wallpaper {
+    monitor =
+    path = $img
+    fit_mode = cover
+}
+EOF
+
+if pgrep -x hyprpaper >/dev/null; then
+    hyprctl hyprpaper wallpaper ",$img" >/dev/null
+else
+    systemctl --user start hyprpaper >/dev/null 2>&1 || true
+fi
+
+# ---- generate the palette -------------------------------------------------
+# --prefer saturation keeps matugen from stalling on images with several
+# candidate source colours (it otherwise wants an interactive answer).
+matugen image "$img" -m dark --prefer saturation --json hex > "$PALETTE"
+
+# pywal is not driving any colours directly -- alacritty is generated below and
+# would fight pywal's escape sequences -- but its cache is kept fresh so
+# pywal-aware tools have an image-derived palette to read.
+wal -i "$img" -n -s -t -e -q >/dev/null 2>&1 || echo "   (pywal failed, continuing)" >&2
+
+python3 "$HELPER" "$PALETTE" "$HOME/.config/alacritty/colors.toml"
+
+# ---- nudge GTK ------------------------------------------------------------
+# libadwaita only takes a named accent, so snap the hue to the nearest one.
+if gsettings writable org.gnome.desktop.interface accent-color >/dev/null 2>&1; then
+    accent=$(python3 -c "
+import json,colorsys,sys
+c=json.load(open('$PALETTE'))['colors']['primary']['default']['color'].lstrip('#')
+r,g,b=(int(c[i:i+2],16)/255 for i in (0,2,4))
+h,s,v=colorsys.rgb_to_hsv(r,g,b)
+if s < 0.12: print('slate'); sys.exit()
+d=h*360
+for name,lo,hi in [('red',345,360),('red',0,15),('orange',15,45),('yellow',45,70),
+                   ('green',70,160),('teal',160,200),('blue',200,255),
+                   ('purple',255,290),('pink',290,345)]:
+    if lo <= d < hi: print(name); break
+else: print('blue')
+")
+    gsettings set org.gnome.desktop.interface accent-color "$accent"
+fi
+
+# ---- reload ---------------------------------------------------------------
+# Quickshell and alacritty both watch their config files and pick the new
+# colours up on their own; Hyprland needs telling.
+hyprctl reload >/dev/null
+
+echo ":: theme updated"

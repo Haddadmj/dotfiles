@@ -1,0 +1,208 @@
+#!/usr/bin/env python3
+"""Keybind cheat sheet for Hyprland.
+
+Reads the live bind table from `hyprctl binds -j` and shows it in rofi, so the
+sheet never drifts from the config. Binds are labelled with the `description`
+option passed to `hl.bind` in ~/.config/hypr/keybinds.lua -- a bind without one
+still shows up, marked as undescribed, so it is obvious what needs a label.
+"""
+import json
+import re
+import shutil
+import subprocess
+import sys
+from html import escape
+
+# Order matters: this is the order modifiers are printed in.
+MODS = [
+    (64, "SUPER"),
+    (4, "CTRL"),
+    (8, "ALT"),
+    (1, "SHIFT"),
+    (128, "MOD5"),
+    (32, "MOD3"),
+    (16, "MOD2"),
+    (2, "CAPS"),
+]
+
+# Hyprland's own names for pointer buttons are unreadable on a cheat sheet.
+KEY_ALIASES = {
+    "mouse:272": "Left Click",
+    "mouse:273": "Right Click",
+    "mouse:274": "Middle Click",
+    "mouse_up": "Scroll Up",
+    "mouse_down": "Scroll Down",
+    "mouse_left": "Scroll Left",
+    "mouse_right": "Scroll Right",
+    "PRINT": "Print",
+    "RETURN": "Enter",
+    "SPACE": "Space",
+    "slash": "/",
+    "comma": ",",
+    "period": ".",
+    "minus": "-",
+    "equal": "=",
+    "bracketleft": "[",
+    "bracketright": "]",
+    "semicolon": ";",
+    "apostrophe": "'",
+    "grave": "`",
+    "backslash": "\\",
+    "TAB": "Tab",
+    "ESCAPE": "Esc",
+    "BACKSPACE": "Backspace",
+    "DELETE": "Delete",
+    "left": "←",
+    "right": "→",
+    "up": "↑",
+    "down": "↓",
+}
+
+
+def mod_names(modmask):
+    return [name for bit, name in MODS if modmask & bit]
+
+
+def pretty_key(key):
+    if key in KEY_ALIASES:
+        return KEY_ALIASES[key]
+    if key.startswith("XF86"):
+        # XF86AudioRaiseVolume -> Audio Raise Volume
+        return re.sub(r"(?<!^)(?=[A-Z])", " ", key[4:])
+    return key.upper() if len(key) == 1 else key
+
+
+def load_binds():
+    try:
+        raw = subprocess.run(
+            ["hyprctl", "binds", "-j"], capture_output=True, text=True, check=True
+        ).stdout
+    except (OSError, subprocess.CalledProcessError) as exc:
+        sys.exit(f"could not read binds from hyprctl: {exc}")
+
+    binds = []
+    for b in json.loads(raw):
+        key = b.get("key") or (
+            f"code:{b['keycode']}" if b.get("keycode") else "?"
+        )
+        binds.append(
+            {
+                "mods": mod_names(b.get("modmask", 0)),
+                "key": key,
+                "desc": (b.get("description") or "").strip(),
+                "submap": b.get("submap", ""),
+            }
+        )
+    return binds
+
+
+def collapse_ranges(rows):
+    """Fold the workspace loop into one line.
+
+    keybinds.lua binds 1-0 in a loop, which would otherwise eat 20 rows. Any run
+    of same-modifier binds on digit keys whose descriptions differ only by a
+    trailing number collapses into a single '1 - 0' entry.
+    """
+    out = []
+    i = 0
+    while i < len(rows):
+        mods, key, desc = rows[i]
+        match = re.match(r"^(.*?)(\d+)$", desc)
+        if match and len(key) == 1 and key.isdigit():
+            prefix = match.group(1)
+            group = [rows[i]]
+            j = i + 1
+            while j < len(rows):
+                n_mods, n_key, n_desc = rows[j]
+                n_match = re.match(r"^(.*?)(\d+)$", n_desc)
+                if (
+                    n_mods == mods
+                    and len(n_key) == 1
+                    and n_key.isdigit()
+                    and n_match
+                    and n_match.group(1) == prefix
+                ):
+                    group.append(rows[j])
+                    j += 1
+                else:
+                    break
+            if len(group) > 2:
+                first_n = match.group(2)
+                last_n = re.match(r"^(.*?)(\d+)$", group[-1][2]).group(2)
+                out.append((mods, f"{key} … {group[-1][1]}", f"{prefix}{first_n}-{last_n}"))
+                i = j
+                continue
+        out.append(rows[i])
+        i += 1
+    return out
+
+
+def build_lines(binds):
+    """Lay out one row per bind: full 'SUPER + SHIFT + S    description'.
+
+    Rows stay grouped by modifier combination (blank line between groups) purely
+    so the sheet is easy to scan -- every row carries its own modifiers, so it
+    still reads correctly once rofi filters the list down.
+    """
+    groups = {}
+    for b in binds:
+        combo = tuple(b["mods"])
+        desc = b["desc"] or "— no description —"
+        if b["submap"]:
+            desc = f"{desc}  [submap: {b['submap']}]"
+        groups.setdefault(combo, []).append((combo, b["key"], desc))
+
+    # Fewest modifiers first, then alphabetically, so SUPER lands above SUPER+SHIFT.
+    ordered = sorted(groups, key=lambda c: (len(c), c))
+    rendered = {c: collapse_ranges(groups[c]) for c in ordered}
+
+    def combo_text(mods, key):
+        shown = " … ".join(pretty_key(p.strip()) for p in key.split("…"))
+        return " + ".join(list(mods) + [shown])
+
+    width = max(
+        (len(combo_text(mods, key)) for rows in rendered.values() for mods, key, _ in rows),
+        default=14,
+    )
+
+    lines = []
+    for combo in ordered:
+        if lines:
+            lines.append("")
+        for mods, key, desc in rendered[combo]:
+            combo_str = escape(combo_text(mods, key).ljust(width))
+            lines.append(f"  <b>{combo_str}</b>   {escape(desc)}")
+    return lines
+
+
+def main():
+    if not shutil.which("rofi"):
+        sys.exit("rofi is not installed")
+
+    binds = load_binds()
+    if not binds:
+        sys.exit("no binds reported by hyprctl")
+
+    lines = build_lines(binds)
+    theme = (
+        'window { width: 62em; } '
+        'listview { lines: 22; scrollbar: true; } '
+        'element { padding: 1px 6px; } '
+        'inputbar { padding: 6px 10px; } '
+        '* { font: "JetBrainsMono Nerd Font 11"; }'
+    )
+    subprocess.run(
+        [
+            "rofi", "-dmenu", "-i", "-markup-rows", "-no-custom",
+            "-p", "Keybinds",
+            "-theme-str", theme,
+        ],
+        input="\n".join(lines),
+        text=True,
+        check=False,
+        stdout=subprocess.DEVNULL,
+    )
+
+
+if __name__ == "__main__":
+    main()

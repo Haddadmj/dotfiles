@@ -1,0 +1,133 @@
+#!/usr/bin/env bash
+# Screenshot helper for Hyprland (grim + slurp).
+# Saves a PNG to ~/Pictures/Screenshots and copies it to the clipboard.
+#
+#   screenshot full     whole desktop (all outputs)
+#   screenshot region   drag to select an area
+#   screenshot window   the focused window, no interaction
+#   screenshot edit     drag a region, then annotate it in swappy before saving
+#   screenshot ocr      drag a region, OCR it, copy the *text* to the clipboard
+#   screenshot color    pick a pixel, copy its hex to the clipboard
+#   screenshot menu     rofi list of all of the above
+#
+# Anything that asks for a selection freezes the screen first (see freeze()),
+# so a menu, a tooltip or a video frame stays put while the region is drawn.
+set -euo pipefail
+
+mode=${1:-full}
+dir="${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots"
+file="$dir/$(date +%Y-%m-%d_%H-%M-%S).png"
+
+# hyprpicker -r -z paints a frozen copy of every output and holds it until it
+# is killed, which is what makes the selection happen against a still image.
+# It needs a moment to map its layer surface -- slurp started too early draws
+# over the live screen instead and the freeze does nothing.
+freeze_pid=""
+freeze() {
+    hyprpicker -r -z >/dev/null 2>&1 &
+    freeze_pid=$!
+    sleep 0.15
+}
+unfreeze() {
+    [ -n "$freeze_pid" ] && kill "$freeze_pid" 2>/dev/null || true
+    freeze_pid=""
+}
+trap unfreeze EXIT
+
+# slurp exits non-zero when the selection is cancelled with Esc; every caller
+# treats that as "user changed their mind" rather than an error.
+select_region() {
+    freeze
+    local geometry
+    geometry=$(slurp -d) || { unfreeze; exit 0; }
+    unfreeze
+    printf '%s' "$geometry"
+}
+
+# The saved file is offered to an image viewer and an annotator. notify-send
+# blocks until the notification is closed and prints the action that was
+# clicked, so the script outlives the capture -- Hyprland's exec already
+# detaches it, so nothing is waiting on us.
+notify_saved() {
+    local f=$1 action
+    action=$(notify-send -i "$f" -A open=Open -A edit=Edit \
+        "Screenshot saved" "${f/#$HOME/~}") || true
+    case $action in
+        open) loupe "$f" & ;;
+        edit) swappy -f "$f" & ;;
+    esac
+}
+
+save() {
+    wl-copy < "$1"
+    notify_saved "$1"
+}
+
+case $mode in
+    full)
+        mkdir -p "$dir"
+        grim "$file"
+        save "$file"
+        ;;
+
+    region)
+        mkdir -p "$dir"
+        grim -g "$(select_region)" "$file"
+        save "$file"
+        ;;
+
+    window)
+        mkdir -p "$dir"
+        # A fullscreen window or one on a special workspace still reports
+        # at/size, so no special casing is needed -- but an empty workspace
+        # has no active window at all and grim would be handed "null,null".
+        read -r x y w h < <(hyprctl -j activewindow |
+            jq -r 'if .address then "\(.at[0]) \(.at[1]) \(.size[0]) \(.size[1])" else "" end')
+        if [ -z "${x:-}" ]; then
+            notify-send "Screenshot" "No focused window"
+            exit 0
+        fi
+        grim -g "${x},${y} ${w}x${h}" "$file"
+        save "$file"
+        ;;
+
+    edit)
+        mkdir -p "$dir"
+        # The raw capture goes to swappy on stdin and only the annotated result
+        # is written, so an abandoned edit leaves nothing behind in the folder.
+        grim -g "$(select_region)" - | swappy -f - -o "$file"
+        # swappy exits 0 whether or not the user saved, so check for the file.
+        [ -s "$file" ] || exit 0
+        save "$file"
+        ;;
+
+    ocr)
+        # Text capture: nothing is written to the screenshot folder, the
+        # recognised text replaces the image on the clipboard.
+        text=$(grim -g "$(select_region)" - | tesseract - - -l eng 2>/dev/null)
+        if [ -z "${text//[[:space:]]/}" ]; then
+            notify-send "OCR" "No text found in that region"
+            exit 0
+        fi
+        printf '%s' "$text" | wl-copy
+        notify-send "OCR" "Copied $(printf '%s' "$text" | wc -w) words to the clipboard"
+        ;;
+
+    color)
+        # hyprpicker does its own freeze here, so freeze() must stay out of it.
+        hex=$(hyprpicker -a -f hex) || exit 0
+        notify-send "Colour picked" "$hex copied to the clipboard"
+        ;;
+
+    menu)
+        choice=$(printf '%s\n' \
+            region full window edit ocr color |
+            rofi -dmenu -i -p "Screenshot" -no-custom) || exit 0
+        exec "$0" "$choice"
+        ;;
+
+    *)
+        echo "usage: ${0##*/} [full|region|window|edit|ocr|color|menu]" >&2
+        exit 1
+        ;;
+esac

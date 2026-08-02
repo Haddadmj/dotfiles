@@ -1,0 +1,15 @@
+# Secrets -- never commit
+config/wallpaper/wallhaven-key
+*.key
+*.token
+.env
+
+# Editor / runtime state that isn't configuration
+config/micro/buffers/
+__pycache__/
+*.pyc
+
+# Backups
+*.bak
+*~
+*.swp

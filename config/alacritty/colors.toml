@@ -1,0 +1,34 @@
+# GENERATED from the current wallpaper -- do not edit by hand.
+# Regenerate with:  wallpaper [/path/to/image]
+
+[colors.primary]
+background = "#121318"
+foreground = "#e2e2e9"
+
+[colors.cursor]
+text = "#162e60"
+cursor = "#b1c6ff"
+
+[colors.selection]
+text = "#162e60"
+background = "#b1c6ff"
+
+[colors.normal]
+black = "#0c0e13"
+red = "#ed6586"
+green = "#65ed8c"
+yellow = "#dfed65"
+blue = "#658eed"
+magenta = "#d865ed"
+cyan = "#65d3ed"
+white = "#c5c6d0"
+
+[colors.bright]
+black = "#44464f"
+red = "#ff7f9e"
+green = "#7fffa3"
+yellow = "#f1ff7f"
+blue = "#7fa5ff"
+magenta = "#eb7fff"
+cyan = "#7fe7ff"
+white = "#e2e2e9"

@@ -1,0 +1,116 @@
+#!/usr/bin/env bash
+# Strip the desktop down to nothing while a game is running.
+#
+#   game-mode on       turn it on
+#   game-mode off      turn it off
+#   game-mode toggle   flip it (bound to SUPER + ALT + G)
+#   game-mode status   print "on" or "off" (exit 0 / 1), for the bar
+#
+# Named game-mode, not gamemode, to stay clear of Feral's gamemoded and the
+# gamemoderun wrapper -- ~/.local/bin is first on PATH and shadowing either of
+# those would break every Steam launch option set by `steam-launch-options`.
+#
+# Everything here is applied with `hyprctl eval`, which runs a Lua string
+# against the live config. Note that `hyprctl keyword` does NOT work on this
+# setup -- the Lua config is parsed by the non-legacy parser, which rejects it
+# with "keyword can't work with non-legacy parsers. Use eval." Any recipe found
+# online that toggles game mode with `hyprctl keyword` will silently do nothing
+# here beyond printing that error.
+#
+# The change lives only in the running compositor; nothing on disk is edited,
+# so this cannot fight the `wallpaper` script -- ~/.config/hypr/look.lua is
+# regenerated from the current wallpaper and swapping variation files
+# underneath it (the way ML4W does) would lose those colours. Turning game mode
+# off is just `hyprctl reload`, which re-reads the config and restores whatever
+# the theme happens to be at that moment.
+#
+# Hooked into gamemoded via ~/.config/gamemode.ini, so any title launched with
+# `gamemoderun %command%` flips this automatically on start and back on exit.
+# The keybind and the hook share one state file and both on/off are idempotent,
+# so launching a game while game mode is already on is a no-op -- but note that
+# quitting that game still turns it off, hook and keybind are not ranked.
+set -euo pipefail
+
+state_dir="${XDG_RUNTIME_DIR:-/tmp}/game-mode"
+state="$state_dir/on"
+saved_profile="$state_dir/power-profile"
+saved_sunset="$state_dir/hyprsunset"
+
+have() { command -v "$1" >/dev/null 2>&1; }
+
+# Nudge the Quickshell bar indicator to re-read the state. Silently skipped if
+# the shell is not up -- gamemoded can fire the hooks before `qs` has started.
+notify_shell() { qs ipc call gamemode sync >/dev/null 2>&1 || true; }
+
+on() {
+    mkdir -p "$state_dir"
+    [ -e "$state" ] && return 0
+
+    # allow_tearing here only arms the compositor; it takes effect per window,
+    # on the ones that also carry the `immediate` rule -- see windowrules.lua.
+    # (misc:vfr is deliberately absent: it no longer exists as of 0.56.1 and
+    # setting it just errors.)
+    hyprctl eval '
+        hl.config({
+          general    = { gaps_in = 0, gaps_out = 0, border_size = 1, allow_tearing = true },
+          decoration = { rounding = 0, blur = { enabled = false }, shadow = { enabled = false } },
+          animations = { enabled = false },
+        })' >/dev/null
+
+    if have powerprofilesctl; then
+        powerprofilesctl get > "$saved_profile" 2>/dev/null || true
+        powerprofilesctl set performance 2>/dev/null || true
+    fi
+
+    # A notification popping over a fullscreen game either steals focus or
+    # tears the frame; queue them instead and let them through on the way out.
+    have dunstctl && dunstctl set-paused true || true
+
+    # Night light shifts the whole palette, which is not what you want mid-game.
+    if pgrep -x hyprsunset >/dev/null; then
+        : > "$saved_sunset"
+        systemctl --user stop hyprsunset 2>/dev/null || pkill -x hyprsunset || true
+    else
+        rm -f "$saved_sunset"
+    fi
+
+    : > "$state"
+    notify_shell
+    notify-send -a game-mode -i input-gaming "Game mode on" \
+        "Effects off, performance profile, notifications paused"
+}
+
+off() {
+    [ -e "$state" ] || return 0
+    rm -f "$state"
+
+    # Cheaper and more correct than unsetting each keyword by hand: reload
+    # re-reads the generated config, so the restored look is the current theme
+    # rather than whatever the defaults happen to be.
+    hyprctl reload >/dev/null
+
+    if have powerprofilesctl; then
+        powerprofilesctl set "$(cat "$saved_profile" 2>/dev/null || echo balanced)" \
+            2>/dev/null || true
+    fi
+    rm -f "$saved_profile"
+
+    have dunstctl && dunstctl set-paused false || true
+
+    if [ -e "$saved_sunset" ]; then
+        systemctl --user start hyprsunset 2>/dev/null ||
+            { hyprsunset >/dev/null 2>&1 & }
+        rm -f "$saved_sunset"
+    fi
+
+    notify_shell
+    notify-send -a game-mode -i input-gaming "Game mode off" "Desktop restored"
+}
+
+case "${1:-toggle}" in
+    on)     on ;;
+    off)    off ;;
+    toggle) if [ -e "$state" ]; then off; else on; fi ;;
+    status) if [ -e "$state" ]; then echo on; else echo off; exit 1; fi ;;
+    *)      echo "usage: ${0##*/} [on|off|toggle|status]" >&2; exit 1 ;;
+esac
