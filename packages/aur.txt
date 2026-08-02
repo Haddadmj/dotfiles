@@ -1,6 +1,14 @@
 # Explicitly-installed AUR packages.
 #
-# Install (the sed strips these comments):
+# PREREQUISITE: paru itself must already exist -- it's what installs this list,
+# so it can't be in it. Bootstrap it from source first (this is also the step
+# that has to happen before cloning this repo):
+#
+#   sudo pacman -S --needed base-devel git
+#   git clone https://aur.archlinux.org/paru.git /tmp/paru
+#   cd /tmp/paru && makepkg -si
+#
+# Then install (the sed strips these comments):
 #   sed 's/#.*//' packages/aur.txt | paru -S --needed -
 #
 # Only the "Desktop" section matters for this config. Everything below it is
@@ -17,8 +25,11 @@ noto-fonts-ar                # Noto Arabic -- drop if you don't need Arabic scri
 ttf-amiri                    # Amiri Arabic typeface -- drop if you don't need Arabic
 
 # --- AUR helper ------------------------------------------------------------
-paru                         # The AUR helper this list assumes
-paru-debug                   # Debug symbols for paru -- safe to skip
+# Deliberately commented out: paru has to be installed before this file can be
+# used at all (see the bootstrap steps at the top). Listed only so the record of
+# what's installed stays complete.
+#paru                        # The AUR helper this list assumes
+#paru-debug                  # Debug symbols for paru -- safe to skip
 
 # --- Hardware --------------------------------------------------------------
 xpadneo-dkms                 # Xbox One wireless controller driver -- only if you use one

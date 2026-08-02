@@ -45,6 +45,17 @@ GENERATED=(
     "alacritty-colors.toml:$HOME/.config/alacritty/colors.toml"
 )
 
+# Every path this repo manages, relative to $HOME. The single source of truth
+# for both uninstalling and restoring, so the two can't drift apart.
+managed_rel_paths() {
+    local item
+    for item in "$REPO"/config/*;       do printf '%s\n' ".config/$(basename "$item")"; done
+    for item in "$REPO"/local/bin/*;    do printf '%s\n' ".local/bin/$(basename "$item")"; done
+    for item in "$REPO"/local/share/*;  do printf '%s\n' ".local/share/$(basename "$item")"; done
+    # home/zshrc -> ~/.zshrc, home/p10k.zsh -> ~/.p10k.zsh, and so on.
+    for item in "$REPO"/home/*;         do printf '%s\n' ".$(basename "$item")"; done
+}
+
 # ---------------------------------------------------------------- install ----
 
 # place <source-in-repo> <destination>
@@ -121,7 +132,9 @@ do_install() {
 
     say ""
     say ":: home"
-    place "$REPO/home/zshrc" "$HOME/.zshrc"
+    for item in "$REPO"/home/*; do
+        place "$item" "$HOME/.$(basename "$item")"
+    done
 
     say ""
     say ":: colours"
@@ -160,18 +173,15 @@ do_uninstall() {
     say ":: uninstalling links into $REPO"
     say ""
 
-    for item in "$REPO"/config/*; do
-        unlink_ours "$HOME/.config/$(basename "$item")"
+    local rel
+    for rel in $(managed_rel_paths); do
+        unlink_ours "$HOME/$rel"
     done
-    for item in "$REPO"/local/bin/*; do
-        unlink_ours "$HOME/.local/bin/$(basename "$item")"
-    done
-    for item in "$REPO"/local/share/*; do
-        unlink_ours "$HOME/.local/share/$(basename "$item")"
-    done
-    unlink_ours "$HOME/.zshrc"
 
-    # Restore the most recent backup over the gaps we just made.
+    # Restore the most recent backup over the gaps we just made. Walks exactly
+    # the paths install.sh would have replaced, rather than guessing at depth --
+    # the backup mirrors $HOME, so .config/hypr sits two levels down and a
+    # top-level scan would only ever find .config (which always still exists).
     local newest
     newest="$(find "$BACKUP_ROOT" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sort | tail -1)"
 
@@ -183,18 +193,21 @@ do_uninstall() {
     fi
 
     say ":: restoring from $newest"
-    local f rel dst
-    while IFS= read -r f; do
-        rel="${f#$newest/}"
+    local rel src dst found=0
+    for rel in $(managed_rel_paths); do
+        src="$newest/$rel"
         dst="$HOME/$rel"
+        [ -e "$src" ] || [ -L "$src" ] || continue
+        found=1
         if [ -e "$dst" ] || [ -L "$dst" ]; then
-            say "  exists $(tilde "$dst") -- left in the backup, not restored"
+            say "  exists  $(tilde "$dst") -- left in the backup, not restored"
             continue
         fi
         say "  restore $(tilde "$dst")"
         run mkdir -p "$(dirname "$dst")"
-        run cp -a "$f" "$dst"
-    done < <(find "$newest" -mindepth 1 -maxdepth 3 \( -type f -o -type d \) -prune 2>/dev/null | sort)
+        run cp -a "$src" "$dst"
+    done
+    [ "$found" -eq 0 ] && say "  (nothing in this backup matches a path we manage)"
 
     say ""
     if [ "$DRY" -eq 1 ]; then

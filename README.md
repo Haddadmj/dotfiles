@@ -82,10 +82,46 @@ sed 's/#.*//' packages/pacman.txt | sudo pacman -S --needed -
 sed 's/#.*//' packages/aur.txt    | paru -S --needed -
 ```
 
+The AUR line needs `paru` to exist already — it's what installs the list, so it
+isn't in it. Bootstrap it first, before you clone this repo:
+
+```sh
+sudo pacman -S --needed base-devel git
+git clone https://aur.archlinux.org/paru.git /tmp/paru
+cd /tmp/paru && makepkg -si
+```
+
 Only the **Hyprland desktop** and **Fonts** sections are actually required.
 Base-system, NVIDIA, gaming, emulation and personal-application sections are
 labelled and safe to drop. Read `packages/pacman.txt` before running it — the
 base section assumes an AMD CPU, btrfs and GRUB/EFI.
+
+### Shell
+
+`home/zshrc` expects **oh-my-zsh** and **powerlevel10k**, and neither comes from
+a package — they're git clones the package lists can't cover. Without them zsh
+errors on `source $ZSH/oh-my-zsh.sh` at every prompt.
+
+```sh
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+
+ZSH_CUSTOM="$HOME/.oh-my-zsh/custom"
+git clone --depth=1 https://github.com/romkatv/powerlevel10k.git         "$ZSH_CUSTOM/themes/powerlevel10k"
+git clone --depth=1 https://github.com/zsh-users/zsh-autosuggestions.git "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
+git clone --depth=1 https://github.com/zsh-users/zsh-syntax-highlighting.git "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
+```
+
+Run this **before** `install.sh` — the oh-my-zsh installer writes its own
+`~/.zshrc`, which would clobber the one being linked in. If you've already
+installed, just re-run `./install.sh` afterwards to put the link back.
+
+`home/p10k.zsh` (→ `~/.p10k.zsh`) is the prompt configuration, so you get this
+prompt rather than p10k's first-run wizard. Delete it and run `p10k configure`
+if you'd rather pick your own.
+
+The remaining plugins in `plugins=(…)` — `git`, `sudo`, `archlinux`, `extract`,
+`fzf`, `zoxide`, `history-substring-search` and friends — all ship with
+oh-my-zsh, so nothing extra is needed for those.
 
 ## The wallpaper → colour pipeline
 
