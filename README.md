@@ -36,7 +36,18 @@ is regenerated from the current wallpaper by a single `wallpaper` command.
 ```sh
 git clone https://github.com/Haddadmj/dotfiles ~/dotfiles
 cd ~/dotfiles
-./install.sh -n     # dry run first — shows exactly what it would touch
+```
+
+**Always dry-run first.** `-n` prints every file it would replace, back up and
+link, and changes nothing:
+
+```sh
+./install.sh -n
+```
+
+Read that output. If you're happy with what it says it will do, run it for real:
+
+```sh
 ./install.sh
 ```
 
@@ -100,18 +111,3 @@ chmod 600 ~/.config/wallpaper/wallhaven-key
 ```
 
 Everything except Wallhaven search works fine without it.
-
-## Notes if you're adapting this
-
-- **Hyprland is configured in Lua, not hyprlang.** That puts it on the
-  non-legacy config parser, where `hyprctl keyword` silently does nothing — use
-  `hyprctl eval` instead. Most advice you'll find online assumes the old parser.
-- **`monitors.lua` is generic** (`output = ""`, preferred mode, auto position),
-  so it should come up sane on any display, but it's the first thing to adjust.
-- **`autostart.lua` restarts the xdg-desktop-portal services on login** to work
-  around a startup race that otherwise kills screen capture for the session.
-  Keep it unless you know you don't need it.
-- **Quickshell IPC handlers must not be named `show`** — the `qs` CLI swallows
-  it as its own `ipc show` subcommand and the call becomes a silent no-op.
-- `config/mimeapps.list` and `gamemode.ini` are personal defaults; harmless, but
-  they're preferences rather than part of the desktop.
