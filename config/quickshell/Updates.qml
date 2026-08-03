@@ -7,16 +7,22 @@ import Quickshell.Io
 Text {
     id: root
 
-    property int count: 0
+    property int repoCount: 0
+    property int aurCount: 0
     property bool checking: false
     property bool updating: false
+
+    readonly property int count: repoCount < 0 || aurCount < 0
+        ? -1 : repoCount + aurCount
 
     readonly property string scripts: Quickshell.shellPath("scripts")
 
     text: {
         if (updating) return "\uf021  updating";
         if (count < 0) return "\uf0ed  ?";
-        return "\uf0ed  " + count;
+        if (count === 0) return "\uf0ed  0";
+        // repo + AUR kept apart: the AUR half is the slow, build-from-source one.
+        return "\uf0ed  " + repoCount + "+" + aurCount;
     }
 
     color: updating ? Colors.accent
@@ -35,8 +41,11 @@ Text {
 
         stdout: StdioCollector {
             onStreamFinished: {
-                const n = parseInt(text.trim(), 10);
-                root.count = isNaN(n) ? -1 : n;
+                const parts = text.trim().split(/\s+/);
+                const repo = parseInt(parts[0], 10);
+                const aur = parseInt(parts[1], 10);
+                root.repoCount = isNaN(repo) ? -1 : repo;
+                root.aurCount = isNaN(aur) ? -1 : aur;
             }
         }
     }
