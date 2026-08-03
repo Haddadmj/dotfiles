@@ -49,7 +49,7 @@ PanelWindow {
                 spacing: 10
 
                 AppLauncher { barWindow: bar }
-                Clock {}
+                Clock { barWindow: bar }
                 Disk {}
                 Memory {}
                 Cpu {}

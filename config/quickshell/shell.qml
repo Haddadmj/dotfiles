@@ -87,4 +87,11 @@ ShellRoot {
 
         delegate: WindowSwitcher {}
     }
+
+    // Month view under the bar clock
+    Variants {
+        model: Quickshell.screens
+
+        delegate: CalendarPopup {}
+    }
 }
