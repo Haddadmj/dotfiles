@@ -12,6 +12,10 @@ Text {
     property bool checking: false
     property bool updating: false
 
+    // Repo backlog worth nagging about. AUR is left out on purpose: those
+    // packages pile up harmlessly, so a big AUR number is not a warning sign.
+    property int repoAlertThreshold: 30
+
     readonly property int count: repoCount < 0 || aurCount < 0
         ? -1 : repoCount + aurCount
 
@@ -21,12 +25,16 @@ Text {
         if (updating) return "\uf021  updating";
         if (count < 0) return "\uf0ed  ?";
         if (count === 0) return "\uf0ed  0";
-        // repo + AUR kept apart: the AUR half is the slow, build-from-source one.
-        return "\uf0ed  " + repoCount + "+" + aurCount;
+        // Labelled so it's obvious at a glance which half is the backlog.
+        return "\uf0ed  Arch:" + repoCount + ", AUR:" + aurCount;
     }
 
-    color: updating ? Colors.accent
-        : (count > 0 ? Colors.warning : Colors.text)
+    color: {
+        if (updating) return Colors.accent;
+        if (repoCount >= repoAlertThreshold) return Colors.error;
+        if (count > 0) return Colors.warning;
+        return Colors.text;
+    }
     font.family: "JetBrainsMono Nerd Font"
     font.pixelSize: 14
 
