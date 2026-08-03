@@ -40,6 +40,11 @@ Singleton {
 
     function close() {
         root.open = false;
+
+        // Drop the snapshot as well. The switcher's delegates outlive the
+        // overlay being hidden, so holding closed windows here means their
+        // bindings re-evaluate against a destroyed toplevel later on.
+        root.entries = [];
     }
 
     function focus(toplevel) {

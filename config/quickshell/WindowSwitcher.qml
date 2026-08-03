@@ -101,9 +101,14 @@ PanelWindow {
                     required property var modelData
                     required property int index
 
+                    // A toplevel destroyed while the switcher still holds it in
+                    // its snapshot arrives here as null, so every read of it
+                    // has to tolerate that.
                     readonly property var toplevel: modelData
-                    readonly property string cls: (modelData.lastIpcObject
-                        && modelData.lastIpcObject.class) || ""
+                    readonly property string cls: (toplevel && toplevel.lastIpcObject
+                        && toplevel.lastIpcObject.class) || ""
+                    readonly property string label: (toplevel && toplevel.title) || cls
+                    readonly property var workspace: toplevel ? toplevel.workspace : null
 
                     width: 150
                     height: row.height
@@ -143,7 +148,7 @@ PanelWindow {
                         Text {
                             width: parent.width
                             horizontalAlignment: Text.AlignHCenter
-                            text: card.toplevel.title || card.cls
+                            text: card.label
                             color: Colors.text
                             font.family: "JetBrainsMono Nerd Font"
                             font.pixelSize: 12
@@ -155,8 +160,8 @@ PanelWindow {
                         Text {
                             width: parent.width
                             horizontalAlignment: Text.AlignHCenter
-                            text: card.toplevel.workspace
-                                ? "workspace " + card.toplevel.workspace.name
+                            text: card.workspace
+                                ? "workspace " + card.workspace.name
                                 : ""
                             color: Colors.textFaint
                             font.family: "JetBrainsMono Nerd Font"
