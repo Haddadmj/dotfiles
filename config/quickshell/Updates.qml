@@ -49,11 +49,11 @@ Text {
 
         stdout: StdioCollector {
             onStreamFinished: {
-                const parts = text.trim().split(/\s+/);
-                const repo = parseInt(parts[0], 10);
-                const aur = parseInt(parts[1], 10);
-                root.repoCount = isNaN(repo) ? -1 : repo;
-                root.aurCount = isNaN(aur) ? -1 : aur;
+                // The script prints "Arch:2, AUR:0" so it reads on its own in a
+                // terminal; pull the two numbers back out of that.
+                const m = text.match(/Arch:(\d+),\s*AUR:(\d+)/);
+                root.repoCount = m ? parseInt(m[1], 10) : -1;
+                root.aurCount = m ? parseInt(m[2], 10) : -1;
             }
         }
     }
