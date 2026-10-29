@@ -2,17 +2,28 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Hyprland
+import Quickshell.Io
 import qs
 import qs.components
 
-// Workspaces 1-5 always shown (shell · web · code · chat · media), others while they exist.
+// Workspaces that have an app rule in hypr/modules/rules.lua (workspace = "N") are always shown,
+// others only while focused. Re-read when rules.lua changes.
 Island {
     id: root
     padding: 4
 
+    FileView {
+        id: rules
+        path: Quickshell.env("HOME") + "/.config/hypr/modules/rules.lua"
+        watchChanges: true
+        onFileChanged: reload()
+    }
+    readonly property var ruled: (rules.text().match(/^\s*workspace\s*=\s*"\d+"/gm) ?? []).map(l => +l.match(/\d+/)[0])
+
     readonly property var ids: {
-        const s = new Set([1, 2, 3, 4, 5])
-        for (const w of Hyprland.workspaces.values) if (w.id > 0) s.add(w.id)
+        const s = new Set(ruled)
+        const cur = Hyprland.focusedWorkspace?.id ?? 0
+        if (cur > 0) s.add(cur)
         return [...s].sort((a, b) => a - b)
     }
 
@@ -63,8 +74,25 @@ Island {
         }
     }
 
+    // Wheel steps through every workspace shown in the bar (empty ones too), wrapping at the ends.
+    // Deltas accumulate so one wheel notch / one touchpad swipe = one step, not a burst.
+    property real wheelAcc: 0
+    function step(dir) {
+        const i = ids.indexOf(Hyprland.focusedWorkspace?.id ?? 1)
+        goTo(ids[(i + dir + ids.length) % ids.length])
+    }
     WheelHandler {
         acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
-        onWheel: e => root.goTo(e.angleDelta.y > 0 ? "e-1" : "e+1")
+        onWheel: e => {
+            const d = e.angleDelta.y
+            if (d === 0) return
+            if (Math.sign(d) !== Math.sign(root.wheelAcc)) root.wheelAcc = 0
+            root.wheelAcc += d
+            if (Math.abs(root.wheelAcc) < 120 || wheelCooldown.running) return
+            root.step(root.wheelAcc > 0 ? -1 : 1)
+            root.wheelAcc = 0
+            wheelCooldown.restart()
+        }
     }
+    Timer { id: wheelCooldown; interval: 180 }
 }

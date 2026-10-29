@@ -113,3 +113,8 @@ alias myip='curl -s ifconfig.me; echo'
 # Powerlevel10k config — run `p10k configure` to customize
 [[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
 alias mirrors='sudo cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.bak && sudo reflector --verbose --country SA,AE,DE --protocol https --age 12 --latest 30 --sort rate --number 10 --download-timeout 5 --save /etc/pacman.d/mirrorlist && cat /etc/pacman.d/mirrorlist && sudo pacman -Syy'
+source /usr/share/nvm/init-nvm.sh
+
+#THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
+export SDKMAN_DIR="$HOME/.sdkman"
+[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"

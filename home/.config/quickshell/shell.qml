@@ -98,7 +98,7 @@ ShellRoot {
     }
     IpcHandler {
         target: "bar"
-        // calendar · audio · power · media
+        // calendar · audio · power
         function toggle(popup: string): void { Ui.toggle(popup) }
     }
 }

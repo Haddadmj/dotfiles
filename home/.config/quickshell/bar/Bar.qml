@@ -19,20 +19,25 @@ PanelWindow {
     IdleInhibitor { window: bar; enabled: Ui.keepAwake }
 
     RowLayout {
+        id: leftRow
         anchors.left: parent.left
         height: parent.height
         spacing: Theme.gap
         LauncherButton {}
         Workspaces {}
-        MediaIsland {}
     }
 
+    // centered when it fits, otherwise slides left and shrinks so it never covers the right islands
     WindowTitle {
-        anchors.centerIn: parent
-        maxWidth: bar.width * 0.4
+        readonly property real lo: leftRow.width + Theme.gap
+        readonly property real hi: bar.width - rightRow.width - Theme.gap
+        anchors.verticalCenter: parent.verticalCenter
+        maxWidth: Math.max(0, Math.min(bar.width * 0.4, hi - lo))
+        x: Math.max(lo, Math.min((bar.width - width) / 2, hi - width))
     }
 
     RowLayout {
+        id: rightRow
         anchors.right: parent.right
         height: parent.height
         spacing: Theme.gap

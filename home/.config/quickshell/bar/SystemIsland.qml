@@ -127,6 +127,69 @@ Island {
         }
     }
 
+    // ── Tailscale ────────────────────────────────────
+    MouseArea {
+        id: ts
+        Layout.preferredWidth: tsIcon.implicitWidth + 14
+        Layout.fillHeight: true
+        hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
+
+        // BackendState: Running · Stopped · NeedsLogin · NoState (daemon down)
+        property string state: ""
+        property string ip: ""
+        property var peers: []
+        readonly property bool on: state === "Running"
+
+        // works without sudo because the user is the tailscale operator (tailscale up --operator)
+        onClicked: if (!toggleProc.running) toggleProc.running = true
+        Process {
+            id: toggleProc
+            command: ["tailscale", ts.on ? "down" : "up"]
+            onExited: statusProc.running = true
+        }
+
+        Process {
+            id: statusProc
+            command: ["tailscale", "status", "--json"]
+            stdout: StdioCollector {
+                onStreamFinished: {
+                    try {
+                        const d = JSON.parse(text)
+                        ts.state = d.BackendState
+                        ts.ip = d.Self?.TailscaleIPs?.[0] ?? ""
+                        ts.peers = Object.values(d.Peer ?? {}).filter(p => p.Online).map(p => p.HostName)
+                    } catch (e) { ts.state = "" }
+                }
+            }
+        }
+        Timer {
+            running: true
+            interval: 5000
+            repeat: true
+            triggeredOnStart: true
+            onTriggered: statusProc.running = true
+        }
+
+        T {
+            id: tsIcon
+            anchors.centerIn: parent
+            font.pixelSize: 15
+            text: Icons.vpn
+            color: ts.on ? Theme.primary : Theme.alpha(Theme.fg, 0.4)
+        }
+
+        Tip {
+            target: ts
+            show: ts.containsMouse
+            text: !ts.state ? "Tailscale daemon not running"
+                : ts.state === "NeedsLogin" ? "Tailscale: logged out<br><font color='" + Theme.fgDim + "'>run: tailscale up</font>"
+                : !ts.on ? "Tailscale off<br><font color='" + Theme.fgDim + "'>click: connect</font>"
+                : `<b>Tailscale</b>  ${ts.ip}<br>` + (ts.peers.length ? ts.peers.join("<br>") : "no peers online")
+                  + "<br><font color='" + Theme.fgDim + "'>click: disconnect</font>"
+        }
+    }
+
     // ── Notifications ────────────────────────────────
     MouseArea {
         id: bell

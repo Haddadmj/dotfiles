@@ -4,7 +4,7 @@ import Quickshell
 
 // Shared UI state: which bar popup is open (only one at a time), launcher, notification center.
 Singleton {
-    property string popup: ""          // "", "calendar", "power", "audio", "media", "sysmon", "devices"
+    property string popup: ""          // "", "calendar", "power", "audio", "sysmon", "devices"
     property bool launcher: false
     property string launcherMode: "apps"   // "apps", "clipboard" or "emoji"
     property bool notifCenter: false

@@ -39,10 +39,12 @@ fd
 ffmpegthumbs
 fzf
 gamemode
+ghostex-bin
 ghostty
 git
 git-delta
 github-cli
+godot
 grub
 gum
 gwenview
@@ -57,7 +59,6 @@ hyprshot
 hyprshutdown
 imagemagick
 input-remapper-git
-jdk17-openjdk
 jq
 kate
 kcalc
@@ -115,7 +116,10 @@ nvidia-open
 nvidia-prime
 nvidia-settings
 nvidia-utils
+nvm
 nwg-menu
+obs-pipewire-audio-capture
+obs-studio-tytan652
 obsidian
 okular
 os-prober
@@ -161,6 +165,7 @@ svgpart
 sweeper
 swtpm
 t3code-nightly-bin
+tailscale
 texinfo
 tldr
 ttf-dejavu
@@ -168,8 +173,10 @@ ttf-jetbrains-mono-nerd
 ttf-liberation
 ttf-meslo-nerd
 ttf-nerd-fonts-symbols
+unzip
 uv
 vesktop-bin
+vicinae-bin
 vim
 virt-manager
 wf-recorder
@@ -179,6 +186,7 @@ wireplumber
 wofi
 xdg-desktop-portal-hyprland
 xdg-desktop-portal-kde
+zip
 zoxide
 zram-generator
 zsh

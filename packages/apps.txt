@@ -9,3 +9,6 @@ piper                        # gaming mouse config
 input-remapper-git           # remap keys/buttons (AUR)
 t3code-nightly-bin           # T3 Code (AUR)
 nuviodesktop-bin             # Nuvio media player (AUR)
+vicinae-bin                  # Raycast-style launcher, ALT+SPACE (AUR)
+obs-studio-tytan652          # OBS with browser source + NVENC (AUR, builds from source)
+obs-pipewire-audio-capture   # OBS per-app audio capture (AUR)

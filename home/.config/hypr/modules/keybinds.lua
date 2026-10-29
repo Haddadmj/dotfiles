@@ -25,6 +25,7 @@ bind(mainMod .. " + B", hl.dsp.exec_cmd(P.browser), "Apps|Browser")
 bind(mainMod .. " + E", hl.dsp.exec_cmd(P.editor), "Apps|Editor")
 bind(mainMod .. " + R", hl.dsp.exec_cmd("qs ipc call launcher toggle"), "Apps|Launcher")  -- quickshell launcher
 bind(mainMod .. " + D", hl.dsp.exec_cmd("qs ipc call dock toggle"), "Apps|Toggle dock")  -- quickshell dock
+bind("ALT + SPACE", hl.dsp.exec_cmd("vicinae toggle"), "Apps|Vicinae")  -- Raycast-style launcher (server started in autostart.lua)
 
 -- Theme: pick a wallpaper (colors follow) / random wallpaper / toggle light-dark
 bind(mainMod .. " + W",         hl.dsp.exec_cmd(scripts .. "/theme.sh pick"),        "Theme|Pick wallpaper")
@@ -51,6 +52,7 @@ bind(mainMod .. " + Tab",    hl.dsp.exec_cmd("qs ipc call overview toggle"), "Sh
 bind(mainMod .. " + period", hl.dsp.exec_cmd("qs ipc call launcher emoji"), "Tools|Emoji picker")
 bind(mainMod .. " + slash",  hl.dsp.exec_cmd("qs ipc call cheatsheet toggle"), "Shell|This cheat sheet")
 bind(mainMod .. " + comma",  hl.dsp.exec_cmd("qs ipc call hyprsettings toggle"), "Shell|Hyprland settings")        -- emoji picker
+bind(mainMod .. " + SHIFT + R", hl.dsp.exec_cmd("pkill -x qs; sleep 0.3; qs"), "Shell|Restart Quickshell")  -- after editing files it doesn't hot-reload (e.g. Icons.qml)
 
 -- Move focus with mainMod + arrow keys
 bind(mainMod .. " + left",  hl.dsp.focus({ direction = "left" }), "Windows|Move focus|SUPER + ← ↑ → ↓")

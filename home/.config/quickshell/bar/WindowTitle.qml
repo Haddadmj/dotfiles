@@ -41,6 +41,7 @@ Island {
     T {
         text: root.title
         elide: Text.ElideRight
-        Layout.maximumWidth: root.maxWidth
+        // maxWidth is for the whole island: subtract padding and the icon
+        Layout.maximumWidth: root.maxWidth - root.padding * 2 - (root.icon !== "" ? 16 + root.spacing : 0)
     }
 }

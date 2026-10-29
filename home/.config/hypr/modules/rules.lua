@@ -28,7 +28,7 @@ hl.window_rule({
     float = true,
 })
 
--- Workspace per app (icons match the bar: 1 shell · 2 web · 3 code · 4 chat · 5 cinema · 6 games)
+-- Workspace per app (icons match the bar: 1 shell · 2 web · 3 code · 4 chat · 5 cinema · 6 games · 7 obs)
 hl.window_rule({
     name      = "ws1-terminal",
     match     = { class = "^(com\\.mitchellh\\.ghostty)$" },
@@ -59,6 +59,11 @@ hl.window_rule({
     name      = "ws6-games",
     match     = { class = "^([Ss]team|heroic|com\\.heroicgameslauncher\\.hgl|[Ll]utris|net\\.lutris\\.Lutris|com\\.usebottles\\.bottles|PrismLauncher|org\\.prismlauncher\\.PrismLauncher|faugus-launcher|itch|minigalaxy|retroarch|dolphin-emu|pcsx2-qt|rpcs3)$" },
     workspace = "6",
+})
+hl.window_rule({
+    name      = "ws7-obs",
+    match     = { class = "^(com\\.obsproject\\.Studio|obs)$" },
+    workspace = "7",
 })
 
 -- Blur behind the Quickshell bar, popups, launcher and notifications (translucent backgrounds)

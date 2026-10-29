@@ -385,7 +385,7 @@ PanelWindow {
                     RowLayout {
                         anchors.fill: parent
                         anchors.leftMargin: 10
-                        anchors.rightMargin: 10
+                        anchors.rightMargin: 28   // clear the pinned dot
                         spacing: 12
 
                         T {
@@ -434,6 +434,7 @@ PanelWindow {
                                 visible: text !== ""
                                 text: row.modelData.subtitle ?? ""
                                 elide: Text.ElideRight
+                                maximumLineCount: 1
                                 font.pixelSize: 11
                                 font.weight: Font.Normal
                                 color: row.current ? Theme.alpha(Theme.primaryText, 0.8) : Theme.fgDim
