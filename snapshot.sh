@@ -15,9 +15,11 @@ done
 
 # current wallpaper only — the whole folder is too big for git
 wall=$(sed -n 1p "$HOME/.cache/theme-state" 2>/dev/null || true)
-if [[ -f $wall ]]; then
-    mkdir -p "$DOT/home/Pictures/Wallpapers"
-    cp "$wall" "$DOT/home/Pictures/Wallpapers/"
+if [[ -f $wall && $wall == "$HOME"/* ]]; then
+    rm -rf "$DOT/home/Pictures/Wallpapers"   # drop the previous one
+    rel=${wall#"$HOME"/}                       # keep the sfw/sketchy/nsfw subfolder so theme-state's path matches
+    mkdir -p "$DOT/home/$(dirname "$rel")"
+    cp "$wall" "$DOT/home/$rel"
 fi
 
 # make paths user-independent; install.sh turns __HOME__ back into the new $HOME
