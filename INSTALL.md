@@ -43,6 +43,34 @@ Connect to Wi-Fi if you're not on Ethernet:
 nmcli device wifi connect "Your-WiFi" password "your-password"
 ```
 
+### Optional: work over SSH (VM or second PC)
+
+Clipboard sharing into a VM is unreliable (SPICE's `spice-vdagent` barely supports Wayland), so it's easier
+to SSH in from your main machine and copy and paste in your own terminal.
+
+In the new install:
+```
+sudo pacman -S openssh
+sudo systemctl enable --now sshd
+ip -4 addr          # note the IP, e.g. 192.168.122.x on virt-manager's default network
+```
+
+From your main machine:
+```
+ssh youruser@192.168.122.x
+```
+
+If you can't read the IP inside the VM, run `sudo virsh domifaddr <vm-name>` on the host (`virsh list --all` shows the name).
+
+Copy files over the same connection (after step 4, once the folders exist):
+```
+scp ~/.config/wallhaven/apikey youruser@192.168.122.x:~/.config/wallhaven/
+scp -r ~/Pictures/Wallpapers youruser@192.168.122.x:~/Pictures/
+```
+
+Run step 4 in that SSH session. For step 5, keep the VM window open to watch the login screen come up.
+To turn SSH off afterwards: `sudo systemctl disable --now sshd`.
+
 ## 4. Run the installer
 
 ```
