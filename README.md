@@ -92,7 +92,7 @@ Everything below is installed by `install.sh` — this list is so you know what 
 
 | Choice | Options → package |
 |---|---|
-| Terminal | `ghostty` · `kitty` · `alacritty` · `foot` |
+| Terminal | `ghostty` · `kitty` · `alacritty` · `foot` — only `ghostty` gets the wallpaper colours |
 | Browser | `brave-origin-nightly-bin` (AUR) · `brave-bin` (AUR) · `firefox` · `chromium` · `zen-browser-bin` (AUR) |
 | File manager | `dolphin` · `nautilus` · `thunar` · `nemo` |
 | Editor | `code` · `kate` · `zed` · `gnome-text-editor` |

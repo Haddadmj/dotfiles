@@ -116,7 +116,7 @@ for g in ${PKG_GROUPS}; do
 done
 
 say "Default apps"
-ask TERMINAL_APP "Terminal"     ghostty ghostty kitty alacritty foot
+ask TERMINAL_APP "Terminal (only ghostty gets the wallpaper colours)" ghostty ghostty kitty alacritty foot
 ask BROWSER      "Browser"      brave-origin-nightly brave-origin-nightly brave firefox chromium zen-browser
 ask FILE_MANAGER "File manager" dolphin dolphin nautilus thunar nemo
 ask EDITOR_APP   "Editor"       code code kate zed gnome-text-editor

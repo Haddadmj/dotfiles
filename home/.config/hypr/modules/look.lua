@@ -42,7 +42,7 @@ hl.config({
             color        = C.shadow,
         },
 
-        -- blur shows through transparent windows (kitty) and layers
+        -- blur shows through transparent windows (ghostty) and layers
         blur = {
             enabled   = true,
             size      = 6,
