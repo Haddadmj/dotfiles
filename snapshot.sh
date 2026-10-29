@@ -13,9 +13,14 @@ grep -vE '^\s*(#|$)' "$DOT/files.txt" | while read -r _group path; do
     fi
 done
 
-# current wallpaper only — the whole folder is too big for git
+# current wallpaper only (the whole folder is too big for git), never sketchy/nsfw
 wall=$(sed -n 1p "$HOME/.cache/theme-state" 2>/dev/null || true)
-if [[ -f $wall && $wall == "$HOME"/* ]]; then
+if [[ $wall == */Wallpapers/sketchy/* || $wall == */Wallpapers/nsfw/* ]]; then
+    # public repo: never commit these; keep the last saved wallpaper and point theme-state back at it
+    prev=$(cd "$DOT/home" && find Pictures/Wallpapers -type f 2>/dev/null | head -1)
+    echo "skip (sketchy/nsfw wallpaper): ${wall#"$HOME"/}${prev:+, keeping ~/$prev}"
+    [[ -n $prev ]] && sed -i "1s|.*|$HOME/$prev|" "$DOT/home/.cache/theme-state"
+elif [[ -f $wall && $wall == "$HOME"/* ]]; then
     rm -rf "$DOT/home/Pictures/Wallpapers"   # drop the previous one
     rel=${wall#"$HOME"/}                       # keep the sfw/sketchy/nsfw subfolder so theme-state's path matches
     mkdir -p "$DOT/home/$(dirname "$rel")"
