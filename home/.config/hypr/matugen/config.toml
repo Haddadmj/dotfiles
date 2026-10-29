@@ -4,21 +4,9 @@
 input_path = "__HOME__/.config/hypr/matugen/templates/hypr-colors.lua"
 output_path = "__HOME__/.config/hypr/colors.lua"
 
-[templates.waybar]
-input_path = "__HOME__/.config/hypr/matugen/templates/waybar-colors.css"
-output_path = "__HOME__/.config/waybar/colors.css"
-
-[templates.kitty]
-input_path = "__HOME__/.config/hypr/matugen/templates/kitty-colors.conf"
-output_path = "__HOME__/.config/kitty/colors.conf"
-
 [templates.kde]
 input_path = "__HOME__/.config/hypr/matugen/templates/kde.colors"
 output_path = "__HOME__/.cache/matugen/Matugen.colors"
-
-[templates.waybar-clock]
-input_path = "__HOME__/.config/hypr/matugen/templates/waybar-clock.jsonc"
-output_path = "__HOME__/.config/waybar/clock.jsonc"
 
 [templates.quickshell]
 input_path = "__HOME__/.config/hypr/matugen/templates/quickshell-colors.json"

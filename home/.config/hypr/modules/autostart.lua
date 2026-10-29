@@ -14,7 +14,6 @@ hl.on("hyprland.start", function ()
     hl.exec_cmd("qs")                                      -- bar, launcher, notifications, OSD (~/.config/quickshell); not switchable
     start("/usr/lib/polkit-kde-authentication-agent-1")    -- password prompts for admin actions
     start("/usr/lib/pam_kwallet_init")                     -- unlock KWallet with the login password (secrets for VS Code etc.)
-    -- start("waybar")                                     -- old bar (swap back with qs above)
     start("hyprpaper")                                     -- wallpaper
     start("hypridle")                                      -- lock + screen off when idle
     start("nm-applet --indicator")                         -- Wi-Fi/network tray icon

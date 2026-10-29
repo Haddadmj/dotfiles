@@ -28,26 +28,10 @@ hl.window_rule({
     float = true,
 })
 
--- Blur behind waybar (it uses a translucent background)
-hl.layer_rule({
-    name  = "blur-waybar",
-    match = { namespace = "^waybar$" },
-    blur  = true,
-    ignore_alpha = 0.1, -- only blur the islands, not the transparent bar
-})
-
--- Calendar popup from the waybar clock
-hl.window_rule({
-    name  = "waybar-calendar",
-    match = { class = "^zenity$", title = "^Calendar$" },
-    float = true,
-    move  = "monitor_w-480 60",
-})
-
 -- Workspace per app (icons match the bar: 1 shell · 2 web · 3 code · 4 chat · 5 cinema · 6 games)
 hl.window_rule({
     name      = "ws1-terminal",
-    match     = { class = "^(kitty|com\\.mitchellh\\.ghostty)$" },
+    match     = { class = "^(com\\.mitchellh\\.ghostty)$" },
     workspace = "1",
 })
 hl.window_rule({

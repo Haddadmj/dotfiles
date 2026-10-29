@@ -7,7 +7,7 @@ DOT=$(cd "$(dirname "$0")" && pwd)
 rm -rf "$DOT/home"; mkdir -p "$DOT/home"
 grep -vE '^\s*(#|$)' "$DOT/files.txt" | while read -r _group path; do
     if [[ -e $HOME/$path ]]; then
-        rsync -aR --exclude '*.bak*' --exclude '*.pre-restore-*' --exclude 'wallhaven/apikey' "$HOME/./$path" "$DOT/home/"
+        rsync -aR --exclude '*.bak*' --exclude '*.pre-restore-*' --exclude 'wallhaven/apikey' --exclude 'backup-*/' --exclude 'micro/buffers' --exclude 'micro/backups' "$HOME/./$path" "$DOT/home/"
     else
         echo "skip (missing): ~/$path"
     fi

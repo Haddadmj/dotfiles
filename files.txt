@@ -3,8 +3,6 @@
 core  .config/hypr
 core  .config/quickshell
 core  .config/ghostty
-core  .config/kitty
-core  .config/waybar
 core  .config/gtk-3.0
 core  .config/gtk-4.0
 core  .config/fontconfig

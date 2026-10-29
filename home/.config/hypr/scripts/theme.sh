@@ -61,8 +61,6 @@ matugen -q -c "$HYPR/matugen/config.toml" -m "$mode" --prefer saturation image "
 
 # 3. reload everything that uses them
 hyprctl reload >/dev/null || true
-pkill -SIGUSR2 waybar || true          # waybar reloads its style (quickshell watches colors.json itself)
-pkill -SIGUSR1 kitty  || true          # kitty reloads its config
 pkill -SIGUSR2 ghostty || true         # ghostty reloads its config
 
 # KDE/Qt (Dolphin): plasma-apply-colorscheme ignores re-applying the same name, so alternate two names
