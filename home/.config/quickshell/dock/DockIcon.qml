@@ -3,6 +3,7 @@ import qs
 import qs.components
 
 // One dock slot. Always `maxSize` tall so the Row lines icons up along the bottom; the icon grows to `size`.
+// A folder (`folderIcons` set) is a frosted tile with its first four app icons.
 // Shows a name bubble on hover, one dot per open window, bounces while `bouncing`.
 // Drag it (when `draggable`) and the panel gets dragMoved/dropped with the pointer in panel coordinates.
 Item {
@@ -11,6 +12,7 @@ Item {
     property real maxSize: 72
     property string iconName: ""      // icon name or path; empty → draw `glyph` on a tile instead
     property string glyph: ""
+    property var folderIcons: null    // icon names of a folder's apps
     property string label: ""
     property int windows: 0
     property bool active: false
@@ -49,9 +51,45 @@ Item {
             visible: root.highlight
         }
 
+        Rectangle {
+            id: folderTile
+            anchors.fill: parent
+            anchors.margins: parent.width * 0.04
+            visible: root.folderIcons !== null
+            radius: width * 0.26
+            color: Theme.alpha(Theme.secondary, 0.55)
+            border.width: 1
+            border.color: Theme.alpha(Theme.fg, 0.14)
+            scale: mouse.pressed && !mouse.dragging ? 0.88 : 1
+            Behavior on scale { NumberAnimation { duration: 120 } }
+
+            Grid {
+                anchors.centerIn: parent
+                columns: 2
+                spacing: folderTile.width * 0.07
+                Repeater {
+                    model: (root.folderIcons ?? []).slice(0, 4)
+                    AppIcon {
+                        required property string modelData
+                        width: folderTile.width * 0.36
+                        height: width
+                        icon: modelData
+                        sourceSize: Qt.size(64, 64)
+                    }
+                }
+            }
+            T {
+                anchors.centerIn: parent
+                visible: (root.folderIcons ?? []).length === 0
+                text: Icons.folder
+                color: Theme.fgDim
+                font.pixelSize: parent.width * 0.5
+            }
+        }
+
         AppIcon {
             anchors.fill: parent
-            visible: root.iconName !== ""
+            visible: root.iconName !== "" && root.folderIcons === null
             icon: root.iconName
             scale: mouse.pressed && !mouse.dragging ? 0.88 : 1
             Behavior on scale { NumberAnimation { duration: 120 } }
@@ -60,7 +98,7 @@ Item {
         Rectangle {
             anchors.fill: parent
             anchors.margins: parent.width * 0.06
-            visible: root.iconName === ""
+            visible: root.iconName === "" && root.folderIcons === null
             radius: width * 0.24
             gradient: Gradient {
                 GradientStop { position: 0; color: Theme.mix(Theme.primary, "#ffffff", 0.15) }

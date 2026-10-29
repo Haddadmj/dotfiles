@@ -6,9 +6,13 @@ import qs.components
 
 // Applications folder: every app in a searchable grid.
 // Click launches · right-click keeps it in / removes it from the dock · type to filter · Enter launches the first match.
+// With `folder` set it picks that folder's apps instead: click adds / removes (✓ = in the folder).
 ColumnLayout {
     id: root
     property bool open: false
+    property string folder: ""
+    readonly property var folderApps: Dock.folder(folder)?.apps ?? []
+    signal done()
     readonly property int columns: 6
     readonly property int cell: 104
     spacing: 10
@@ -24,14 +28,15 @@ ColumnLayout {
     }
 
     function launch(a) { Dock.launch(a.id); Ui.popup = "" }
+    function choose(a) { folder ? Dock.toggleInFolder(folder, a.id) : launch(a) }
 
     RowLayout {
         Layout.fillWidth: true
         Layout.preferredHeight: 40
         spacing: 10
 
-        T { text: Icons.apps; color: Theme.primary; font.pixelSize: 18; Layout.leftMargin: 4 }
-        T { text: "Applications"; font.pixelSize: 15 }
+        T { text: root.folder ? Icons.folderPlus : Icons.apps; color: Theme.primary; font.pixelSize: 18; Layout.leftMargin: 4 }
+        T { text: root.folder ? `Add to “${Dock.folder(root.folder)?.name ?? ""}”` : "Applications"; font.pixelSize: 15 }
         Item { Layout.fillWidth: true }
 
         Rectangle {
@@ -57,8 +62,8 @@ ColumnLayout {
                     font.family: Theme.font
                     font.pixelSize: 13
                     clip: true
-                    Keys.onReturnPressed: if (root.apps.length) root.launch(root.apps[0])
-                    Keys.onEnterPressed: if (root.apps.length) root.launch(root.apps[0])
+                    Keys.onReturnPressed: if (root.apps.length) root.choose(root.apps[0])
+                    Keys.onEnterPressed: if (root.apps.length) root.choose(root.apps[0])
                     T {
                         visible: !search.text
                         text: "Search…"
@@ -67,6 +72,16 @@ ColumnLayout {
                     }
                 }
             }
+        }
+
+        Rectangle {
+            visible: !!root.folder
+            Layout.preferredWidth: doneText.implicitWidth + 28
+            Layout.preferredHeight: 34
+            radius: Theme.radius
+            color: dm.containsMouse ? Theme.mix(Theme.primary, "#ffffff", 0.15) : Theme.primary
+            T { id: doneText; anchors.centerIn: parent; text: "Done"; color: Theme.primaryText }
+            MouseArea { id: dm; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.done() }
         }
     }
 
@@ -84,7 +99,7 @@ ColumnLayout {
         delegate: Item {
             id: tile
             required property var modelData
-            readonly property bool pinned: Dock.pinned.includes(modelData.id)
+            readonly property bool pinned: root.folder ? root.folderApps.includes(modelData.id) : Dock.isPinned(modelData.id)
             width: root.cell
             height: root.cell
 
@@ -120,7 +135,7 @@ ColumnLayout {
 
             // in the dock already
             Rectangle {
-                visible: tile.pinned
+                visible: tile.pinned && !root.folder
                 anchors.top: parent.top
                 anchors.right: parent.right
                 anchors.margins: 12
@@ -130,13 +145,27 @@ ColumnLayout {
                 color: Theme.primary
             }
 
+            // in the folder
+            Rectangle {
+                visible: tile.pinned && !!root.folder
+                anchors.top: parent.top
+                anchors.right: parent.right
+                anchors.margins: 9
+                width: 20
+                height: 20
+                radius: 10
+                color: Theme.primary
+                T { anchors.centerIn: parent; text: Icons.check; color: Theme.primaryText; font.pixelSize: 13 }
+            }
+
             MouseArea {
                 id: tm
                 anchors.fill: parent
                 hoverEnabled: true
                 acceptedButtons: Qt.LeftButton | Qt.RightButton
                 cursorShape: Qt.PointingHandCursor
-                onClicked: e => e.button === Qt.RightButton ? Dock.togglePin(tile.modelData.id) : root.launch(tile.modelData)
+                onClicked: e => root.folder ? root.choose(tile.modelData)
+                    : e.button === Qt.RightButton ? Dock.togglePin(tile.modelData.id) : root.launch(tile.modelData)
             }
         }
 
@@ -151,7 +180,8 @@ ColumnLayout {
     T {
         Layout.fillWidth: true
         horizontalAlignment: Text.AlignHCenter
-        text: "Click to open · right-click to add to / remove from the dock (● = in dock)"
+        text: root.folder ? "Click to add to / remove from the folder (✓ = in folder) · Esc closes"
+            : "Click to open · right-click to add to / remove from the dock (● = in dock)"
         color: Theme.alpha(Theme.fg, 0.4)
         font.pixelSize: 11
         font.weight: Font.Normal

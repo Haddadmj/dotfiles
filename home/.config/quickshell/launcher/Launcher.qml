@@ -443,7 +443,7 @@ PanelWindow {
 
                     // in the dock
                     Rectangle {
-                        visible: row.modelData.app !== undefined && Dock.pinned.includes(row.modelData.app.id)
+                        visible: row.modelData.app !== undefined && Dock.isPinned(row.modelData.app.id)
                         anchors.right: parent.right
                         anchors.rightMargin: 14
                         anchors.verticalCenter: parent.verticalCenter

@@ -44,7 +44,7 @@ hl.window_rule({
     move  = "monitor_w-480 60",
 })
 
--- Workspace per app (icons match waybar: 1 shell · 2 web · 3 code)
+-- Workspace per app (icons match the bar: 1 shell · 2 web · 3 code · 4 chat · 5 cinema · 6 games)
 hl.window_rule({
     name      = "ws1-terminal",
     match     = { class = "^(kitty|com\\.mitchellh\\.ghostty)$" },
@@ -59,6 +59,22 @@ hl.window_rule({
     name      = "ws3-code",
     match     = { class = "^([Cc]ode|code-oss|code-url-handler)$" },
     workspace = "3",
+})
+hl.window_rule({
+    name      = "ws4-discord",
+    match     = { class = "^([Dd]iscord|vesktop|equibop|legcord|[Ww]eb[Cc]ord)$" },
+    workspace = "4",
+})
+hl.window_rule({
+    name      = "ws5-cinema",
+    match     = { class = "^(com-nuvio-app-MainKt|[Nn]uvio|com\\.stremio\\.[Ss]tremio|[Ss]tremio|com\\.github\\.iwalton3\\.jellyfin-media-player|org\\.jellyfin\\..*|[Pp]lex.*|[Kk]odi)$" },
+    workspace = "5",
+})
+-- game launchers and emulator frontends (games started from them open wherever you are, usually here)
+hl.window_rule({
+    name      = "ws6-games",
+    match     = { class = "^([Ss]team|heroic|com\\.heroicgameslauncher\\.hgl|[Ll]utris|net\\.lutris\\.Lutris|com\\.usebottles\\.bottles|PrismLauncher|org\\.prismlauncher\\.PrismLauncher|faugus-launcher|itch|minigalaxy|retroarch|dolphin-emu|pcsx2-qt|rpcs3)$" },
+    workspace = "6",
 })
 
 -- Blur behind the Quickshell bar, popups, launcher and notifications (translucent backgrounds)

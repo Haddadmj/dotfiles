@@ -5,10 +5,12 @@ import Quickshell.Hyprland
 import Quickshell.Io
 
 // Dock state shared by every screen's dock and the launcher (right-click an app there to pin it).
-// Saved to <state>/dock.json: pinned desktop entry ids, hide mode, magnification.
+// Saved to <state>/dock.json: pinned desktop entry ids, folders, hide mode, magnification.
+// A pinned id starting with "folder:" is a folder; its name and apps live in `folders`.
 Singleton {
     id: root
     readonly property var pinned: cfg.pinned
+    readonly property var folders: cfg.folders        // [{ id: "folder:…", name, apps: [entry ids] }]
     // "dodge" (hides while a window covers it) · "always" (shows at the screen edge) · "never"
     // The dock never reserves space, so windows keep their full size.
     readonly property string hideMode: ["dodge", "always", "never"].includes(cfg.hideMode) ? cfg.hideMode : "dodge"
@@ -25,6 +27,7 @@ Singleton {
         adapter: JsonAdapter {
             id: cfg
             property var pinned: ["org.kde.dolphin", "com.mitchellh.ghostty", "brave-origin-nightly", "code-oss", "obsidian"]
+            property var folders: []
             property string hideMode: "dodge"
             property bool magnify: true
         }
@@ -33,13 +36,74 @@ Singleton {
     function setHideMode(m) { cfg.hideMode = m }
     function setMagnify(on) { cfg.magnify = on }
 
-    function isPinned(id) { return cfg.pinned.includes(id) }
+    // "pinned" covers apps on the dock itself and apps inside a folder on it
+    function isFolder(id) { return id.startsWith("folder:") }
+    function folder(fid) { return cfg.folders.find(f => f.id === fid) ?? null }
+    function folderOf(id) { return cfg.folders.find(f => f.apps.includes(id)) ?? null }
+    function isPinned(id) { return cfg.pinned.includes(id) || !!folderOf(id) }
     function pin(id) { if (id && !isPinned(id)) cfg.pinned = [...cfg.pinned, id] }
-    function unpin(id) { cfg.pinned = cfg.pinned.filter(p => p !== id) }
+    function unpin(id) {
+        cfg.pinned = cfg.pinned.filter(p => p !== id)
+        cfg.folders = isFolder(id) ? cfg.folders.filter(f => f.id !== id) : stripped(id)
+    }
     function togglePin(id) { isPinned(id) ? unpin(id) : pin(id) }
+    // put an app (taking it out of any folder) or a folder at position `to` on the dock
     function movePinned(id, to) {
         const list = cfg.pinned.filter(p => p !== id)
         list.splice(Math.max(0, Math.min(to, list.length)), 0, id)
+        if (!isFolder(id) && folderOf(id)) cfg.folders = stripped(id)
+        cfg.pinned = list
+    }
+    function stripped(id) { return cfg.folders.map(f => f.apps.includes(id) ? Object.assign({}, f, { apps: f.apps.filter(a => a !== id) }) : f) }
+
+    // ── folders ──────────────────────────────────────
+    // a name from what the apps have in common (Emulator → "Emulators"), else "Folder"
+    readonly property var categoryNames: [
+        ["Emulator", "Emulators"], ["Game", "Games"], ["Development", "Development"], ["Graphics", "Graphics"],
+        ["AudioVideo", "Media"], ["Audio", "Media"], ["Video", "Media"], ["Office", "Office"],
+        ["Network", "Internet"], ["Education", "Education"], ["Science", "Science"],
+        ["Settings", "Settings"], ["System", "System"], ["Utility", "Utilities"],
+    ]
+    function guessName(apps) {
+        const cats = apps.map(id => DesktopEntries.byId(id)?.categories ?? [])
+        const hit = categoryNames.find(([c]) => cats.length && cats.every(list => list.includes(c)))
+        return hit ? hit[1] : "Folder"
+    }
+    // new folder at position `at` (default: the end); the apps leave wherever they were. Returns its id.
+    function createFolder(apps, at, name) {
+        const fid = "folder:" + Date.now().toString(36)
+        let list = cfg.pinned.filter(p => !apps.includes(p))
+        const k = at === undefined ? list.length : Math.max(0, Math.min(at, list.length))
+        list.splice(k, 0, fid)
+        let fs = cfg.folders
+        for (const a of apps) fs = fs.map(f => f.apps.includes(a) ? Object.assign({}, f, { apps: f.apps.filter(x => x !== a) }) : f)
+        cfg.folders = [...fs, { id: fid, name: name ?? guessName(apps), apps: [...apps] }]
+        cfg.pinned = list
+        return fid
+    }
+    function renameFolder(fid, name) {
+        name = name.trim()
+        if (name) cfg.folders = cfg.folders.map(f => f.id === fid ? Object.assign({}, f, { name }) : f)
+    }
+    function addToFolder(fid, id) {
+        if (!folder(fid) || folder(fid).apps.includes(id)) return
+        cfg.pinned = cfg.pinned.filter(p => p !== id)
+        cfg.folders = stripped(id).map(f => f.id === fid ? Object.assign({}, f, { apps: Array.from(f.apps).concat(id) }) : f)
+    }
+    function removeFromFolder(fid, id) { cfg.folders = cfg.folders.map(f => f.id === fid ? Object.assign({}, f, { apps: f.apps.filter(a => a !== id) }) : f) }
+    function toggleInFolder(fid, id) { folder(fid)?.apps.includes(id) ? removeFromFolder(fid, id) : addToFolder(fid, id) }
+    // drop `id` onto `target` on the dock: join its folder, or make a new folder of the two. Returns the folder id.
+    function combine(id, target) {
+        if (isFolder(target)) { addToFolder(target, id); return target }
+        return createFolder([target, id], cfg.pinned.indexOf(target))
+    }
+    // dissolve a folder, its apps taking its place on the dock
+    function ungroup(fid) {
+        const f = folder(fid)
+        if (!f) return
+        const list = cfg.pinned.filter(p => !f.apps.includes(p))
+        list.splice(list.indexOf(fid), 1, ...f.apps)
+        cfg.folders = cfg.folders.filter(x => x.id !== fid)
         cfg.pinned = list
     }
 
@@ -48,7 +112,7 @@ Singleton {
     // a pinned app this window belongs to, by .desktop id or StartupWMClass (several .desktop files can share a class)
     function pinnedFor(appId) {
         const a = appId.toLowerCase()
-        return cfg.pinned.find(id => {
+        return cfg.folders.reduce((all, f) => all.concat(Array.from(f.apps)), Array.from(cfg.pinned)).find(id => {
             const e = DesktopEntries.byId(id)
             return id.toLowerCase() === a || (e?.startupClass ?? "").toLowerCase() === a
         })
@@ -68,13 +132,21 @@ Singleton {
         return out
     }
 
-    // dock order: pinned apps, then running apps that aren't pinned
+    // dock order: pinned apps and folders, then running apps that aren't pinned (apps in a folder show up here while open)
+    // a folder item has `folder` and `apps` (app items); its `windows` are all of theirs
+    function appItem(id, pinned) { return { id, entry: DesktopEntries.byId(id), pinned, windows: running[id] ?? [] } }
     readonly property var items: {
         DesktopEntries.applications.values
         const r = running
         const list = cfg.pinned
-            .map(id => ({ id, entry: DesktopEntries.byId(id), pinned: true, windows: r[id] ?? [] }))
-            .filter(i => i.entry)
+            .map(id => {
+                if (!isFolder(id)) return appItem(id, true)
+                const f = folder(id)
+                if (!f) return null
+                const apps = f.apps.map(a => appItem(a, true)).filter(a => a.entry)
+                return { id, folder: f, apps, pinned: true, windows: apps.reduce((all, a) => all.concat(a.windows), []) }
+            })
+            .filter(i => i && (i.entry || i.folder))
         for (const key in r)
             if (!cfg.pinned.includes(key)) list.push({ id: key, entry: DesktopEntries.byId(key), pinned: false, windows: r[key] })
         return list

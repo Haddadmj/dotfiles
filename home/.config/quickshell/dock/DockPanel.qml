@@ -10,6 +10,7 @@ import qs.components
 // macOS-style dock along the bottom: pinned apps, then other open apps │ Applications folder, Trash.
 //   click: open / focus (again cycles windows) · middle-click: new window · right-click: menu
 //   drag an icon sideways to reorder, drag it up out of the dock to remove it, drop files on the Trash
+//   folders: hold a dragged app over another icon to group them (or over a folder to add it); click a folder to open it
 //   right-click the dock background for hiding (dodge windows · always · never) and magnification.
 //   SUPER+D toggles it. It never reserves space: it floats over windows and hides when one covers it.
 // State lives in the Dock singleton (pinned apps are shared with the launcher).
@@ -28,11 +29,12 @@ PanelWindow {
 
     readonly property string menuName: "dock-menu:" + screen.name
     readonly property string appsName: "dock-apps:" + screen.name
+    readonly property string folderName: "dock-folder:" + screen.name
 
     // ── visibility ───────────────────────────────────
     readonly property var monitor: Hyprland.monitorFor(screen)
     readonly property var workspace: monitor?.activeWorkspace ?? null
-    readonly property bool popupOpen: Ui.popup === menuName || Ui.popup === appsName
+    readonly property bool popupOpen: Ui.popup === menuName || Ui.popup === appsName || Ui.popup === folderName
     property bool hoverHold: false
 
     // a window on this screen's workspace overlaps where the (un-magnified) dock sits
@@ -116,19 +118,59 @@ PanelWindow {
     property string dragId: ""
     property bool dragOut: false        // pointer is well above the dock: dropping removes the icon
     function slotAt(x) { return Math.round((x - (width - baseWidth) / 2 - base / 2) / (base + sp)) }
+    // an app held over the middle of another pinned icon for a moment groups with it
+    property string combineId: ""       // icon that dropping now groups with
+    property string combineCandidate: ""
+    Timer { id: combineTimer; interval: 450; onTriggered: root.combineId = root.combineCandidate }
+    function iconUnder(x) {
+        const rel = x - (width - baseWidth) / 2
+        const k = Math.floor(rel / (base + sp))
+        const off = rel - k * (base + sp)
+        return k >= 0 && k < count && off > base * 0.2 && off < base * 0.8 ? Dock.items[k] : null
+    }
     function dragTo(item, x, y) {
         dragId = item.id
         dragOut = item.pinned && y < height - dockH - margin - 70
+        const t = iconUnder(x)
+        const c = !dragOut && item.entry && t && t.pinned && t.id !== item.id ? t.id : ""
+        if (c !== combineCandidate) {
+            combineCandidate = c
+            combineId = ""
+            if (c) combineTimer.restart(); else combineTimer.stop()
+        }
     }
     function dropAt(item, x, y) {
         if (dragOut) Dock.unpin(item.id)
-        else if (item.entry) {
+        else if (combineId) {
+            const isNew = !Dock.isFolder(combineId)
+            const fid = Dock.combine(item.id, combineId)
+            if (isNew) openFolder(fid, "apps", true)
+        } else if (item.entry || item.folder) {
             const k = slotAt(x)
-            if (item.pinned) Dock.movePinned(item.id, k)
-            else if (k <= Dock.pinned.length) { Dock.pin(item.id); Dock.movePinned(item.id, k) }
+            if (item.pinned || k <= Dock.pinned.length) Dock.movePinned(item.id, k)
         }
         dragId = ""
         dragOut = false
+        combineTimer.stop()
+        combineCandidate = ""
+        combineId = ""
+    }
+
+    // ── folders ──────────────────────────────────────
+    property string folderId: ""
+    property string folderPage: "apps"
+    property bool folderRename: false
+    property Item folderTarget: null
+    // open a folder's popup once its dock icon exists (it may have just been created)
+    function openFolder(fid, page, rename) {
+        folderId = fid
+        folderPage = page ?? "apps"
+        folderRename = !!rename
+        Qt.callLater(() => {
+            const i = Dock.items.findIndex(it => it.id === fid)
+            folderTarget = i >= 0 ? icons.itemAt(i)?.iconItem ?? null : null
+            Ui.popup = folderName
+        })
     }
 
     // ── trash ────────────────────────────────────────
@@ -200,6 +242,7 @@ PanelWindow {
             spacing: root.sp
 
             Repeater {
+                id: icons
                 // keyed on id so delegates survive windows opening/closing
                 model: ScriptModel { values: Dock.items.map(i => i.id) }
 
@@ -210,16 +253,21 @@ PanelWindow {
                     readonly property var item: Dock.items.find(i => i.id === modelData) ?? { id: modelData, windows: [] }
                     size: root.sizeAt(index)
                     maxSize: root.maxSize
-                    iconName: item.entry?.icon || modelData
-                    label: item.entry?.name ?? modelData
-                    windows: item.windows.length
-                    active: item.windows.some(t => t.activated)
-                    bouncing: Dock.launching === modelData
+                    readonly property bool isFolder: !!item.folder
+                    iconName: isFolder ? "" : item.entry?.icon || modelData
+                    folderIcons: isFolder ? item.apps.map(a => a.entry?.icon || a.id) : null
+                    label: isFolder ? item.folder.name : item.entry?.name ?? modelData
+                    windows: isFolder ? item.apps.filter(a => a.windows.length).length : item.windows.length
+                    active: item.windows.some(t => t.activated) || (isFolder && Ui.popup === root.folderName && root.folderId === modelData)
+                    bouncing: Dock.launching === modelData || (isFolder && item.apps.some(a => a.id === Dock.launching))
                     draggable: true
                     dimmed: dragging && root.dragOut
+                    highlight: root.combineId === modelData
                     onClicked: e => {
+                        const wasOpen = Ui.popup === root.folderName && root.folderId === modelData
                         Ui.popup = ""
-                        if (e.button === Qt.RightButton) root.openMenu("app", app.iconItem, item)
+                        if (e.button === Qt.RightButton) root.openMenu(isFolder ? "folder" : "app", app.iconItem, item)
+                        else if (isFolder) { if (!wasOpen) root.openFolder(modelData) }
                         else if (e.button === Qt.MiddleButton) Dock.launch(modelData)
                         else Dock.activate(item)
                     }
@@ -279,14 +327,16 @@ PanelWindow {
             }
         }
 
-        // "Remove" hint while an icon is dragged out of the dock
+        // hints while dragging: removing, or grouping into a folder
         T {
             anchors.horizontalCenter: bg.horizontalCenter
             anchors.bottom: bg.top
             anchors.bottomMargin: root.maxSize - root.base + 40
-            visible: root.dragOut
-            text: Icons.trash + "  Remove from Dock"
-            color: Theme.error
+            visible: root.dragOut || root.combineId !== ""
+            text: root.dragOut ? Icons.trash + "  Remove from Dock"
+                : Dock.isFolder(root.combineId) ? Icons.folderPlus + `  Add to “${Dock.folder(root.combineId)?.name ?? ""}”`
+                : Icons.folderPlus + "  Make a folder"
+            color: root.dragOut ? Theme.error : Theme.primary
         }
     }
 
@@ -323,10 +373,74 @@ PanelWindow {
         }
         MenuItem {
             visible: root.menuKind === "app" && !!root.menuApp?.entry
-            readonly property bool pinned: root.menuApp ? Dock.pinned.includes(root.menuApp.id) : false
+            readonly property bool pinned: root.menuApp ? Dock.isPinned(root.menuApp.id) : false
             icon: pinned ? Icons.close : Icons.check
             text: pinned ? "Remove from Dock" : "Keep in Dock"
             onClicked: { Ui.popup = ""; Dock.togglePin(root.menuApp.id) }
+        }
+
+        // app: folders
+        readonly property var appFolder: root.menuKind === "app" && root.menuApp ? Dock.folderOf(root.menuApp.id) : null
+        MenuItem {
+            visible: !!menu.appFolder
+            icon: Icons.undo
+            text: `Move out of “${menu.appFolder?.name ?? ""}”`
+            onClicked: { Ui.popup = ""; Dock.movePinned(root.menuApp.id, Dock.pinned.indexOf(menu.appFolder.id) + 1) }
+        }
+        Repeater {
+            model: root.menuKind === "app" && root.menuApp?.entry ? Dock.folders.filter(f => f.id !== menu.appFolder?.id) : []
+            MenuItem {
+                required property var modelData
+                icon: Icons.folder
+                text: `${menu.appFolder ? "Move" : "Add"} to “${modelData.name}”`
+                Layout.maximumWidth: 320
+                onClicked: { Ui.popup = ""; Dock.addToFolder(modelData.id, root.menuApp.id) }
+            }
+        }
+        MenuItem {
+            visible: root.menuKind === "app" && !!root.menuApp?.entry
+            icon: Icons.folderPlus
+            text: "New folder with this app"
+            onClicked: {
+                Ui.popup = ""
+                const id = root.menuApp.id
+                const at = Dock.pinned.indexOf(id)
+                root.openFolder(Dock.createFolder([id], at >= 0 ? at : undefined), "apps", true)
+            }
+        }
+
+        // folder
+        MenuItem {
+            visible: root.menuKind === "folder"
+            icon: Icons.folder
+            text: "Open"
+            onClicked: { Ui.popup = ""; root.openFolder(root.menuApp.id) }
+        }
+        MenuItem {
+            visible: root.menuKind === "folder"
+            icon: Icons.plus
+            text: "Add apps…"
+            onClicked: { Ui.popup = ""; root.openFolder(root.menuApp.id, "add") }
+        }
+        MenuItem {
+            visible: root.menuKind === "folder"
+            icon: Icons.pencil
+            text: "Rename"
+            onClicked: { Ui.popup = ""; root.openFolder(root.menuApp.id, "apps", true) }
+        }
+        MenuItem {
+            visible: root.menuKind === "folder" && (root.menuApp?.apps.length ?? 0) > 0
+            icon: Icons.apps
+            text: "Ungroup  (apps back on the dock)"
+            onClicked: { Ui.popup = ""; Dock.ungroup(root.menuApp.id) }
+        }
+        MenuItem {
+            visible: root.menuKind === "folder"
+            icon: Icons.close
+            text: (root.menuApp?.apps.length ?? 0) > 0 ? `Remove folder and its ${root.menuApp.apps.length} apps` : "Remove folder"
+            hoverColor: Theme.error
+            hoverText: Theme.errorText
+            onClicked: { Ui.popup = ""; Dock.unpin(root.menuApp.id) }
         }
         MenuItem {
             visible: root.menuKind === "app" && (root.menuApp?.windows.length ?? 0) > 0
@@ -365,6 +479,13 @@ PanelWindow {
             icon: Icons.search
             text: "Open Launcher"
             onClicked: { Ui.popup = ""; Ui.toggleLauncher("apps") }
+        }
+
+        MenuItem {
+            visible: root.menuKind === "dock"
+            icon: Icons.folderPlus
+            text: "New folder"
+            onClicked: { Ui.popup = ""; root.openFolder(Dock.createFolder([], undefined, "Folder"), "add") }
         }
 
         // dock settings (background, or under the apps folder)
@@ -407,5 +528,23 @@ PanelWindow {
         padding: 14
 
         AppsGrid { open: Ui.popup === root.appsName }
+    }
+
+    BarPopup {
+        name: root.folderName
+        target: root.folderTarget ?? bg
+        above: true
+        align: 0.5
+        padding: 14
+
+        FolderView {
+            folderId: root.folderId
+            page: root.folderPage
+            rename: root.folderRename
+            open: Ui.popup === root.folderName
+            onPageRequested: p => root.folderPage = p
+            // the folder popup closes for the menu, which then points at the folder's icon
+            onAppMenu: app => root.openMenu("app", root.folderTarget ?? bg, app)
+        }
     }
 }
