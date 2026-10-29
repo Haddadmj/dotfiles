@@ -70,7 +70,21 @@ cur_kde=$(kreadconfig6 --group General --key ColorScheme 2>/dev/null || true)
 [[ $cur_kde == MatugenA ]] && name=MatugenB || name=MatugenA
 sed "s/^ColorScheme=.*/ColorScheme=$name/; s/^Name=.*/Name=$name/" \
     "$HOME/.cache/matugen/Matugen.colors" > "$HOME/.local/share/color-schemes/$name.colors"
-plasma-apply-colorscheme "$name" >/dev/null 2>&1 || true
+if command -v plasma-apply-colorscheme >/dev/null; then
+    plasma-apply-colorscheme "$name" >/dev/null 2>&1 || true
+else
+    # no Plasma (qt6ct-kde setup): merge the scheme into kdeglobals ourselves, and give qt6ct a fixed path
+    cp "$HOME/.cache/matugen/Matugen.colors" "$HOME/.local/share/color-schemes/Matugen.colors"
+    awk -F= '/^\[.*\]$/ { g = substr($0, 2, length($0) - 2); next }
+             g ~ /^Colors:|^WM$|^General$/ && NF >= 2 { k = $1; sub(/^[^=]*=/, ""); printf "%s\t%s\t%s\n", g, k, $0 }' \
+        "$HOME/.cache/matugen/Matugen.colors" |
+    while IFS=$'\t' read -r grp key val; do
+        args=(); IFS=']' read -ra parts <<<"${grp//\]\[/]}"   # nested groups like [Colors:Button][Inactive]
+        for p in "${parts[@]}"; do args+=(--group "$p"); done
+        kwriteconfig6 --file kdeglobals "${args[@]}" --key "$key" "$val"
+    done
+    kwriteconfig6 --file kdeglobals --group General --key ColorScheme Matugen
+fi
 
 # GTK apps
 gsettings set org.gnome.desktop.interface color-scheme "prefer-$mode"

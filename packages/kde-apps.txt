@@ -1,2 +1,15 @@
-dolphin dolphin-plugins ark kate okular gwenview spectacle kcalc kfind
-ffmpegthumbs kdegraphics-thumbnailers kio-admin partitionmanager kwalletmanager
+# KDE apps (standalone, no Plasma desktop)
+dolphin                      # file manager
+dolphin-plugins              # git/dropbox integration for Dolphin
+ark                          # archive manager
+kate                         # text editor
+okular                       # PDF viewer
+gwenview                     # image viewer
+spectacle                    # screenshot tool
+kcalc                        # calculator
+kfind                        # file search
+ffmpegthumbs                 # video thumbnails
+kdegraphics-thumbnailers     # PDF/image thumbnails
+kio-admin                    # open folders as admin in Dolphin
+partitionmanager             # disk partitions
+kwalletmanager               # manage saved passwords

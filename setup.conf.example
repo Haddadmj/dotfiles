@@ -1,5 +1,7 @@
 # Preset answers for ./install.sh -c setup.conf   (anything left out is asked; add -y to use defaults instead)
-PKG_GROUPS="core fonts nvidia kde-apps shell apps"   # core fonts nvidia kde-apps shell apps gaming dev virt
+PKG_GROUPS="fonts nvidia kde-apps shell apps"   # fonts nvidia kde-apps shell apps gaming dev virt (core is always added)
+# Optional: pick single apps per group (PICK_<group>, "-" becomes "_"). Leave out to get the whole group.
+PICK_apps="obsidian vesktop-bin mpv"
 TERMINAL_APP="ghostty"          # ghostty kitty alacritty foot
 BROWSER="brave-origin-nightly"  # brave-origin-nightly brave firefox chromium zen-browser
 FILE_MANAGER="dolphin"          # dolphin nautilus thunar nemo
@@ -13,6 +15,7 @@ GAPS_OUT="20"
 BORDER="2"
 ROUNDING="10"
 HYBRID_GPU="yes"                # yes no — render on NVIDIA when there is also an iGPU
-LOGIN_MANAGER="plasma-login-manager"   # plasma-login-manager sddm "none (start from TTY1)"
+LOGIN_MANAGER="sddm"           # sddm ly plasma-login-manager none
+QT_THEME="qt6ct-kde"           # qt6ct-kde (no Plasma) plasma-integration
 MULTILIB="yes"
 ZSH_SETUP="yes"

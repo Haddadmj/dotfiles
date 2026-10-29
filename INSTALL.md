@@ -51,12 +51,16 @@ bash <(curl -fsSL https://raw.githubusercontent.com/Haddadmj/dotfiles/main/setup
 
 This clones the repo to `~/dotfiles` and starts `install.sh`:
 
-1. Enter your sudo password. It installs `git`, `base-devel` and `gum`, then builds `paru`.
-2. Answer the menus. Arrow keys to move, **space** to tick package groups, **enter** to confirm.
+1. Enter your sudo password — **only once**; it stays unlocked until the installer finishes. It installs `git`, `base-devel` and `gum`, then builds `paru`.
+2. Answer the menus. Arrow keys to move, **space** to tick, **enter** to confirm. After the groups,
+   each group opens a list of its apps (all ticked) — untick what you don't want.
    Defaults match the original setup; for a desktop like the original, keep
-   `core fonts nvidia kde-apps shell` (add `apps`/`gaming`/`dev`/`virt` if you want them).
+   `fonts nvidia kde-apps shell` (add `apps`/`gaming`/`dev`/`virt` if you want them).
 3. Check the settings summary and package list, then confirm.
-4. Stay nearby: AUR builds take a while, and sudo may ask for your password again.
+4. AUR builds take a while; no more password prompts after the first one.
+
+**Just Hyprland, no Plasma:** keep the defaults `sddm` or `ly` for the login screen and `qt6ct-kde` for Qt theming.
+`plasma-login-manager` and `plasma-integration` both pull in Plasma.
 
 Re-running is safe: installed packages are skipped and replaced files are backed up to `~/.dotfiles-backup/`.
 
@@ -66,7 +70,7 @@ Re-running is safe: installed packages are skipped and replaced files are backed
 reboot
 ```
 
-- **plasma-login-manager / sddm:** pick the **Hyprland** session and log in.
+- **sddm / ly / plasma-login-manager:** pick the **Hyprland** session and log in (ly: arrow keys switch the session).
 - **none:** log in on TTY1 and Hyprland starts automatically.
 
 ## 6. After the first login
@@ -84,3 +88,4 @@ reboot
 | A package failed to install | The installer prints which ones. Run `paru -S <name>` by hand, or remove it from `packages/*.txt`. |
 | Want different choices later | `~/dotfiles/install.sh -d` re-applies config and choices without touching packages. |
 | No icons in the bar | Install the **fonts** group (Nerd Fonts). |
+| Plasma got installed (older installer) | `sudo pacman -Rns plasma-login-manager xdg-desktop-portal-kde plasma-integration plasma-workspace`, then re-run `install.sh` and pick `sddm`/`ly` + `qt6ct-kde`. |

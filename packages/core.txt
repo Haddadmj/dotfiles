@@ -1,11 +1,44 @@
-# Hyprland desktop + everything the Quickshell shell and scripts call
-hyprland hyprpaper hypridle hyprlock hyprlauncher hyprpicker hyprshot hyprshutdown
-quickshell matugen
-xdg-desktop-portal-hyprland xdg-desktop-portal-kde xdg-user-dirs
-qt5-wayland qt6-wayland kde-gtk-config breeze-gtk
-whitesur-icon-theme whitesur-cursor-theme-git
-pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber pavucontrol
-networkmanager network-manager-applet bluez bluez-utils
-polkit-kde-agent kwallet-pam
-cliphist wl-clipboard wofi wf-recorder satty libvips libnotify jq rsync
-headsetcontrol btop
+# Hyprland desktop — always installed. Format: package  # description
+hyprland                     # the compositor
+quickshell                   # bar, launcher, dock, notifications, lock, settings panel
+matugen                      # colors from the wallpaper
+hyprpaper                    # wallpaper
+hypridle                     # idle timeout
+hyprlock                     # lock screen
+hyprlauncher                 # app menu
+hyprpicker                   # color picker
+hyprshot                     # screenshots
+hyprshutdown                 # shutdown dialog
+xdg-desktop-portal-hyprland  # screen sharing
+xdg-desktop-portal-gtk       # file pickers (no Plasma needed)
+xdg-user-dirs                # Pictures/Videos/… folders
+qt5-wayland                  # Qt5 apps on Wayland
+qt6-wayland                  # Qt6 apps on Wayland
+breeze                       # Qt widget style
+breeze-gtk                   # GTK theme
+kde-gtk-config               # applies the theme to GTK apps
+whitesur-icon-theme          # icons (AUR)
+whitesur-cursor-theme-git    # cursor (AUR)
+pipewire                     # audio
+pipewire-alsa                # audio: ALSA apps
+pipewire-pulse               # audio: PulseAudio apps
+pipewire-jack                # audio: JACK apps
+wireplumber                  # audio session manager
+pavucontrol                  # volume mixer
+networkmanager               # network
+network-manager-applet       # network tray icon
+bluez                        # Bluetooth
+bluez-utils                  # Bluetooth CLI
+polkit-kde-agent             # admin password prompts
+kwallet-pam                  # unlock the keyring at login
+cliphist                     # clipboard history
+wl-clipboard                 # clipboard CLI
+wofi                         # fallback wallpaper picker
+wf-recorder                  # screen recording
+satty                        # screenshot annotation
+libvips                      # wallpaper thumbnails
+libnotify                    # notify-send
+jq                           # JSON in scripts
+rsync                        # used by the installer/snapshot
+headsetcontrol               # headset battery in the bar
+btop                         # system monitor

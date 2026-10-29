@@ -1,2 +1,8 @@
-# needs [multilib] for lib32-nvidia-utils
-nvidia-open nvidia-utils lib32-nvidia-utils nvidia-settings nvidia-prime libva-nvidia-driver linux-headers
+# NVIDIA drivers (lib32-* needs [multilib])
+nvidia-open                  # kernel driver (RTX 20xx and newer)
+nvidia-utils                 # driver userspace
+lib32-nvidia-utils           # 32-bit games/Steam
+nvidia-settings              # control panel
+nvidia-prime                 # prime-run for hybrid laptops
+libva-nvidia-driver          # hardware video decode
+linux-headers                # needed for the driver on the linux kernel

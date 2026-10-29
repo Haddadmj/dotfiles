@@ -1,1 +1,7 @@
-qemu-desktop libvirt virt-manager edk2-ovmf swtpm dnsmasq
+# Virtual machines
+qemu-desktop                 # QEMU
+libvirt                      # VM management daemon
+virt-manager                 # VM GUI
+edk2-ovmf                    # UEFI for VMs
+swtpm                        # TPM for VMs (Windows 11)
+dnsmasq                      # VM networking

@@ -2,6 +2,21 @@
 
 Hyprland (Lua config) · Quickshell bar/launcher/dock/notifications/OSD/lock · matugen colors from the wallpaper.
 
+![Desktop](screenshots/desktop.jpg)
+
+## Screenshots
+
+| Launcher (`SUPER+SPACE`) | Quick settings (`SUPER+A`) |
+|---|---|
+| ![Launcher: apps, clipboard and emoji tabs, math and web search](screenshots/launcher.jpg) | ![Quick settings: Bluetooth, do not disturb, dark mode, recording, volume](screenshots/quicksettings.jpg) |
+| **Hyprland settings (`SUPER+,`)** | **Keybind cheat sheet (`SUPER+/`)** |
+| ![Settings panel: gaps, borders, blur, layout, input — applied live](screenshots/settings.jpg) | ![Cheat sheet generated from keybinds.lua](screenshots/cheatsheet.jpg) |
+
+**Theme:** colors come from the wallpaper (matugen) and follow it into the bar, dock, terminals and KDE apps.
+`SUPER+CTRL+W` switches dark / light:
+
+![Bar in dark mode (top) and light mode (bottom)](screenshots/theme-bars.jpg)
+
 ## Install on a fresh Arch
 
 Step-by-step from a clean `archinstall`: **[INSTALL.md](INSTALL.md)**.
@@ -12,8 +27,8 @@ Requirements: a fresh **Arch Linux** install, a normal user with **sudo**, and i
 
 or `git clone https://github.com/Haddadmj/dotfiles ~/dotfiles && ~/dotfiles/install.sh`.
 
-The installer asks what you want (package groups, terminal, browser, file manager, editor, keyboard
-layouts, gaps/borders/rounding, dark/light, NVIDIA hybrid GPU, login screen, zsh), shows the exact
+The installer asks for your password **once**, then what you want (package groups and the apps inside each, terminal, browser, file manager, editor, keyboard
+layouts, gaps/borders/rounding, dark/light, NVIDIA hybrid GPU, login screen, Qt theming, zsh), shows the exact
 package list for confirmation, backs up existing files to `~/.dotfiles-backup/`, then copies the config.
 
 - Unattended: `cp setup.conf.example my.conf`, edit, `./install.sh -c my.conf -y`
@@ -44,8 +59,8 @@ Everything below is installed by `install.sh` — this list is so you know what 
 | `hyprpaper` | wallpaper |
 | `hypridle`, `hyprlock` | idle timeout, screen lock |
 | `hyprlauncher`, `hyprpicker`, `hyprshot`, `hyprshutdown` | app menu, color picker, screenshots, shutdown dialog |
-| `xdg-desktop-portal-hyprland`, `xdg-desktop-portal-kde` | screen sharing, file pickers |
-| `qt5-wayland`, `qt6-wayland`, `kde-gtk-config`, `breeze-gtk` | Qt/GTK apps on Wayland with matching theme |
+| `xdg-desktop-portal-hyprland`, `xdg-desktop-portal-gtk` | screen sharing, file pickers (no Plasma needed) |
+| `qt5-wayland`, `qt6-wayland`, `breeze`, `breeze-gtk`, `kde-gtk-config` | Qt/GTK apps on Wayland with matching theme |
 | `whitesur-icon-theme`, `whitesur-cursor-theme-git` **(AUR)** | icons and cursor |
 | `pipewire`, `pipewire-alsa`, `pipewire-pulse`, `pipewire-jack`, `wireplumber`, `pavucontrol` | audio |
 | `networkmanager`, `network-manager-applet` | network + tray icon |
@@ -58,7 +73,7 @@ Everything below is installed by `install.sh` — this list is so you know what 
 | `headsetcontrol`, `btop` | headset battery and system monitor in the bar |
 | `xdg-user-dirs` | Pictures/Videos/… folders |
 
-### Optional groups (picked in the installer)
+### Optional groups (picked in the installer — each one then lets you untick single apps)
 
 | Group | Packages |
 |---|---|
@@ -79,7 +94,8 @@ Everything below is installed by `install.sh` — this list is so you know what 
 | Browser | `brave-origin-nightly-bin` (AUR) · `brave-bin` (AUR) · `firefox` · `chromium` · `zen-browser-bin` (AUR) |
 | File manager | `dolphin` · `nautilus` · `thunar` · `nemo` |
 | Editor | `code` · `kate` · `zed` · `gnome-text-editor` |
-| Login screen | `plasma-login-manager` · `sddm` · none (Hyprland starts on TTY1 login) |
+| Login screen | `sddm` (graphical, adds Xorg) · `ly` (lightweight terminal UI) · `plasma-login-manager` (pulls in Plasma) · none (Hyprland starts on TTY1 login) |
+| Qt/KDE app theming | `qt6ct-kde` (AUR) + `archlinux-xdg-menu` — no Plasma · `plasma-integration` — KDE's own, pulls in Plasma |
 
 Package lists live in `packages/*.txt` — edit them to add or remove things.
 

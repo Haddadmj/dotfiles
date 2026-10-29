@@ -8,6 +8,7 @@
 set -euo pipefail
 DOT=$(cd "$(dirname "$0")" && pwd)
 TS=$(date +%Y%m%d-%H%M%S)
+GROUP_LIST=(fonts nvidia kde-apps shell apps gaming dev virt)   # optional groups; core is always installed
 
 PRESET=""; YES=0; ONLY_DOTS=0
 while getopts "c:ydh" o; do
@@ -23,6 +24,16 @@ done
 [[ $EUID -eq 0 ]] && { echo "Run as your normal user, not root (sudo is used when needed)."; exit 1; }
 command -v pacman >/dev/null || { echo "This installer is for Arch Linux."; exit 1; }
 
+# ── sudo once ──────────────────────────────────────────────────────────────────
+# ask for the password a single time, then keep the sudo timestamp fresh until the script exits
+if (( ! ONLY_DOTS )); then
+    echo "Your password is needed once; sudo stays unlocked until the installer finishes."
+    sudo -v
+    ( while kill -0 $$ 2>/dev/null; do sudo -n true; sleep 50; done ) 2>/dev/null &
+    SUDO_KEEPALIVE=$!
+    trap 'kill $SUDO_KEEPALIVE 2>/dev/null' EXIT
+fi
+
 # ── helpers ────────────────────────────────────────────────────────────────────
 say()  { gum style --foreground 212 --bold "==> $*"; }
 info() { gum style --faint "    $*"; }
@@ -36,15 +47,19 @@ ask() {
     else a=$(gum input --header "$q" --value "$def"); fi
     printf -v "$var" '%s' "${a:-$def}"
 }
-# askmulti VAR "question" "default1,default2" opt1 opt2 …   → space-separated
-askmulti() {
-    local var=$1 q=$2 def=$3; shift 3
-    [[ -n ${!var:-} ]] && return
-    if (( YES )); then printf -v "$var" '%s' "${def//,/ }"; return; fi
-    printf -v "$var" '%s' "$(gum choose --no-limit --header "$q" --selected "$def" "$@" | tr '\n' ' ')"
-}
 has() { [[ " $1 " == *" $2 "* ]]; }
-pkgs() { grep -hvE '^\s*#' "${@/#/$DOT/packages/}" | tr -s ' \n' '\n' | grep -v '^$'; }
+pkgfile_() { echo "$DOT/packages/$1.txt"; }
+# package names of a group (strips comments)
+pkgs()  { sed 's/#.*//' "$(pkgfile_ "$1")" | tr -s ' \t' '\n' | grep -v '^$'; }
+# "name — description" lines for the picker
+items() { grep -vE '^\s*(#|$)' "$(pkgfile_ "$1")" | sed -E 's/^(\S+)\s*#\s*(.*)$/\1 — \2/'; }
+# menu label: group, its title comment, and a few example apps
+label() {
+    local title sample
+    title=$(sed -n '1s/^#\s*//p' "$(pkgfile_ "$1")" | sed 's/ (.*//; s/ — .*//')
+    sample=$(pkgs "$1" | head -4 | paste -sd' ')
+    printf '%-9s %s  ·  %s…' "$1" "$title" "$sample"
+}
 
 # ── bootstrap: gum (menus) + paru (AUR) ─────────────────────────────────────────
 if (( ONLY_DOTS )); then command -v gum >/dev/null || sudo pacman -S --needed --noconfirm gum
@@ -66,15 +81,37 @@ nv_addr=$(grep -i nvidia <<<"$gpus" | head -1 | cut -d' ' -f1 || true)
 ig_line=$(grep -vi nvidia <<<"$gpus" | head -1 || true)
 ig_addr=${ig_line%% *}
 ig_name=igpu; grep -qi amd <<<"$ig_line" && ig_name=amd-igpu; grep -qi intel <<<"$ig_line" && ig_name=intel-igpu
-def_groups="core,fonts,kde-apps,shell"
-[[ -n $nv_addr ]] && def_groups+=",nvidia"
+def_groups="fonts kde-apps shell"
+[[ -n $nv_addr ]] && def_groups+=" nvidia"
 def_hybrid=no; [[ -n $nv_addr && -n $ig_addr ]] && def_hybrid=yes
 
 # ── questions ──────────────────────────────────────────────────────────────────
 say "What to install"
-askmulti PKG_GROUPS "Package groups (space to toggle, enter to confirm)" "$def_groups" \
-    core fonts nvidia kde-apps shell apps gaming dev virt
-PKG_GROUPS="core ${PKG_GROUPS/core/}"     # core is always installed
+info "core (always): $(pkgs core | wc -l) packages — Hyprland, Quickshell, matugen, portals, audio, network, Bluetooth"
+if [[ -z ${PKG_GROUPS:-} ]]; then
+    if (( YES )); then PKG_GROUPS=$def_groups
+    else
+        labels=(); selected=()
+        for g in "${GROUP_LIST[@]}"; do
+            labels+=("$(label "$g")")
+            has "$def_groups" "$g" && selected+=("$(label "$g")")
+        done
+        sel_csv=$(IFS=,; echo "${selected[*]}")
+        PKG_GROUPS=$(gum choose --no-limit --height 12 --header "Package groups (space = toggle, enter = next; you pick apps inside each group next)" \
+                        --selected "$sel_csv" "${labels[@]}" | awk '{print $1}' | tr '\n' ' ')
+    fi
+fi
+PKG_GROUPS="core ${PKG_GROUPS//core/}"
+
+# pick individual apps inside each chosen group (PICK_<group> in a preset skips this)
+for g in ${PKG_GROUPS}; do
+    [[ $g == core ]] && continue
+    var="PICK_${g//-/_}"
+    [[ -n ${!var:-} ]] && continue
+    if (( YES )); then printf -v "$var" '%s' "$(pkgs "$g" | tr '\n' ' ')"; continue; fi
+    printf -v "$var" '%s' "$(items "$g" | gum choose --no-limit --height 20 --selected '*' \
+        --header "$(label "$g" | sed 's/  ·.*//') — untick what you don't want" | awk '{print $1}' | tr '\n' ' ')"
+done
 
 say "Default apps"
 ask TERMINAL_APP "Terminal"     ghostty ghostty kitty alacritty foot
@@ -97,30 +134,21 @@ ask ROUNDING   "Corner rounding (px)" 10
 say "System"
 [[ $def_hybrid == yes ]] && info "Hybrid graphics found: NVIDIA $nv_addr + $ig_name $ig_addr"
 ask HYBRID_GPU    "Render Hyprland on the NVIDIA GPU (hybrid laptop/desktop udev rule)?" "$def_hybrid" yes no
-ask LOGIN_MANAGER "Login screen" plasma-login-manager plasma-login-manager sddm "none (start from TTY1)"
+ask LOGIN_MANAGER "Login screen — sddm: graphical (adds Xorg) · ly: lightweight terminal UI · plasma-login-manager: KDE's, pulls in Plasma · none: auto-start on TTY1" \
+    sddm sddm ly plasma-login-manager none
+ask QT_THEME      "Qt/KDE app theming (Dolphin etc.) — qt6ct-kde: no Plasma needed · plasma-integration: KDE's own, pulls in Plasma" \
+    qt6ct-kde qt6ct-kde plasma-integration
 ask MULTILIB      "Enable [multilib] (32-bit libs; needed by nvidia/gaming)?" yes yes no
 ask ZSH_SETUP     "Set up zsh + oh-my-zsh + powerlevel10k as your shell?" "$(has "$PKG_GROUPS" shell && echo yes || echo no)" yes no
 
 # remember answers
-cat > "$DOT/last-install.conf" <<EOF
-PKG_GROUPS="$PKG_GROUPS"
-TERMINAL_APP="$TERMINAL_APP"
-BROWSER="$BROWSER"
-FILE_MANAGER="$FILE_MANAGER"
-EDITOR_APP="$EDITOR_APP"
-MAIN_MOD="$MAIN_MOD"
-KB_LAYOUT="$KB_LAYOUT"
-KB_OPTIONS="$KB_OPTIONS"
-THEME_MODE="$THEME_MODE"
-GAPS_IN="$GAPS_IN"
-GAPS_OUT="$GAPS_OUT"
-BORDER="$BORDER"
-ROUNDING="$ROUNDING"
-HYBRID_GPU="$HYBRID_GPU"
-LOGIN_MANAGER="$LOGIN_MANAGER"
-MULTILIB="$MULTILIB"
-ZSH_SETUP="$ZSH_SETUP"
-EOF
+{
+    for v in PKG_GROUPS TERMINAL_APP BROWSER FILE_MANAGER EDITOR_APP MAIN_MOD KB_LAYOUT KB_OPTIONS THEME_MODE \
+             GAPS_IN GAPS_OUT BORDER ROUNDING HYBRID_GPU LOGIN_MANAGER QT_THEME MULTILIB ZSH_SETUP; do
+        printf '%s="%s"\n' "$v" "${!v}"
+    done
+    for g in $PKG_GROUPS; do [[ $g == core ]] || { v="PICK_${g//-/_}"; printf '%s="%s"\n' "$v" "${!v% }"; }; done
+} > "$DOT/last-install.conf"
 gum style --border normal --padding "0 2" "$(cat "$DOT/last-install.conf")"
 
 # map app choices to package names / commands
@@ -130,11 +158,16 @@ declare -A CMD=([zed]=zeditor)   # apps whose command differs from their name
 
 extra=()
 for app in "$TERMINAL_APP" "$BROWSER" "$FILE_MANAGER" "$EDITOR_APP"; do extra+=("${PKG[$app]:-$app}"); done
-case $LOGIN_MANAGER in sddm) extra+=(sddm) ;; plasma-login-manager) extra+=(plasma-login-manager) ;; esac
+[[ $LOGIN_MANAGER != none ]] && extra+=("$LOGIN_MANAGER")
+extra+=("$QT_THEME")
+[[ $QT_THEME == qt6ct-kde ]] && extra+=(archlinux-xdg-menu)   # "Open with" menus without Plasma
 [[ $ZSH_SETUP == yes ]] && extra+=(zsh)
 
-files=(); for g in $PKG_GROUPS; do files+=("$g.txt"); done
-mapfile -t list < <( { pkgs "${files[@]}"; printf '%s\n' "${extra[@]}"; } | sort -u)
+mapfile -t list < <( {
+    pkgs core
+    for g in $PKG_GROUPS; do [[ $g == core ]] || { v="PICK_${g//-/_}"; tr ' ' '\n' <<<"${!v}"; }; done
+    printf '%s\n' "${extra[@]}"
+} | grep -v '^$' | sort -u)
 [[ $MULTILIB == yes ]] || mapfile -t list < <(printf '%s\n' "${list[@]}" | grep -v '^lib32-')
 if (( ! ONLY_DOTS )); then
     say "These ${#list[@]} packages will be installed (repo + AUR, already-installed ones are skipped):"
@@ -151,9 +184,10 @@ fi
 sudo pacman -Syu --noconfirm
 
 # install in one go; on failure retry one by one so a single renamed package doesn't stop everything
-if ! paru -S --needed --noconfirm "${list[@]}"; then
+# (--sudoloop keeps paru's own sudo alive through long AUR builds)
+if ! paru -S --needed --noconfirm --sudoloop "${list[@]}"; then
     failed=()
-    for p in "${list[@]}"; do paru -S --needed --noconfirm "$p" || failed+=("$p"); done
+    for p in "${list[@]}"; do paru -S --needed --noconfirm --sudoloop "$p" || failed+=("$p"); done
     (( ${#failed[@]} )) && gum style --foreground 196 "Could not install: ${failed[*]}"
 fi
 fi
@@ -197,6 +231,21 @@ if [[ $HYBRID_GPU == yes && -n $nv_addr && -n $ig_addr ]]; then
 else
     sed -i -E 's|^(hl.env\("AQ_DRM_DEVICES")|-- \1|' "$H/modules/env.lua"
 fi
+if [[ $QT_THEME == qt6ct-kde ]]; then
+    sed -i -E 's|^(hl.env\("QT_QPA_PLATFORMTHEME", )"[^"]*"|\1"qt6ct"|; s|^(hl.env\("XDG_MENU_PREFIX", )"[^"]*"|\1"arch-"|' "$H/modules/env.lua"
+    cs=$stage/.local/share/color-schemes
+    cur=$(sed -n 's/^ColorScheme=//p' "$stage/.config/kdeglobals" 2>/dev/null | head -1)
+    [[ -f $cs/Matugen.colors || ! -f $cs/$cur.colors ]] || cp "$cs/$cur.colors" "$cs/Matugen.colors"
+    mkdir -p "$stage/.config/qt6ct"
+    cat > "$stage/.config/qt6ct/qt6ct.conf" <<EOF
+[Appearance]
+color_scheme_path=$HOME/.local/share/color-schemes/Matugen.colors
+custom_palette=true
+icon_theme=$([[ $THEME_MODE == dark ]] && echo breeze-dark || echo breeze)
+standard_dialogs=default
+style=Breeze
+EOF
+fi
 if ! has "$PKG_GROUPS" nvidia; then   # NVIDIA-only env vars break VA-API on other GPUs
     sed -i -E 's/^(hl.env\("(LIBVA_DRIVER_NAME|__GLX_VENDOR_LIBRARY_NAME|NVD_BACKEND)")/-- \1/' "$H/modules/env.lua"
 fi
@@ -235,7 +284,8 @@ plugins/zsh-autosuggestions      https://github.com/zsh-users/zsh-autosuggestion
 plugins/zsh-completions          https://github.com/zsh-users/zsh-completions
 plugins/zsh-syntax-highlighting  https://github.com/zsh-users/zsh-syntax-highlighting
 EOF
-    [[ $SHELL == */zsh ]] || chsh -s /usr/bin/zsh
+    # via sudo so it doesn't ask for the password again (plain chsh always prompts)
+    [[ $(getent passwd "$USER" | cut -d: -f7) == */zsh ]] || sudo chsh -s /usr/bin/zsh "$USER"
     sudo pkgfile --update >/dev/null 2>&1 || true   # for the command-not-found plugin
 fi
 
@@ -243,16 +293,26 @@ fi
 say "Services"
 sudo systemctl enable NetworkManager bluetooth
 has "$PKG_GROUPS" virt && { sudo systemctl enable libvirtd; sudo usermod -aG libvirt "$USER"; }
-has "$PKG_GROUPS" apps && sudo systemctl enable ratbagd 2>/dev/null || true
+has "${PICK_apps:-}" piper && sudo systemctl enable ratbagd 2>/dev/null || true
+# only one login screen at a time
+if [[ $LOGIN_MANAGER != ly ]] && systemctl is-enabled ly@tty1.service >/dev/null 2>&1; then
+    sudo systemctl disable ly@tty1.service; sudo systemctl enable getty@tty1.service
+fi
 case $LOGIN_MANAGER in
-    sddm)                 sudo systemctl enable sddm ;;
-    plasma-login-manager) sudo systemctl enable plasmalogin ;;
-    none*)
-        if ! grep -q start-hyprland "$HOME/.zprofile" 2>/dev/null; then
-            echo '[[ -z $WAYLAND_DISPLAY && $(tty) == /dev/tty1 ]] && exec start-hyprland' >> "$HOME/.zprofile"
-            echo '[[ -z $WAYLAND_DISPLAY && $(tty) == /dev/tty1 ]] && exec start-hyprland' >> "$HOME/.bash_profile"
-        fi ;;
+    sddm)                 sudo systemctl enable --force sddm ;;
+    plasma-login-manager) sudo systemctl enable --force plasmalogin ;;
+    ly)
+        sudo systemctl disable display-manager.service 2>/dev/null || true
+        sudo systemctl disable getty@tty1.service 2>/dev/null || true   # ly takes over tty1 so it shows at boot
+        sudo systemctl enable ly@tty1.service ;;
+    none)
+        sudo systemctl disable display-manager.service 2>/dev/null || true
+        line='[[ -z $WAYLAND_DISPLAY && $(tty) == /dev/tty1 ]] && exec start-hyprland'
+        for f in "$HOME/.zprofile" "$HOME/.bash_profile"; do
+            grep -qF start-hyprland "$f" 2>/dev/null || echo "$line" >> "$f"
+        done ;;
 esac
+[[ $QT_THEME == qt6ct-kde ]] && XDG_MENU_PREFIX=arch- kbuildsycoca6 >/dev/null 2>&1 || true
 systemctl --user daemon-reload
 systemctl --user enable sync-applications-folder.path 2>/dev/null || true
 xdg-user-dirs-update

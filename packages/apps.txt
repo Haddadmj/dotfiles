@@ -1,2 +1,11 @@
-obsidian vesktop-bin code-features code-marketplace solaar piper input-remapper-git
-t3code-nightly-bin nuviodesktop-bin mpv
+# Everyday apps
+obsidian                     # notes
+vesktop-bin                  # Discord client (AUR)
+mpv                          # video player
+code-features                # VS Code: extra features (AUR)
+code-marketplace             # VS Code: official extension marketplace (AUR)
+solaar                       # Logitech devices
+piper                        # gaming mouse config
+input-remapper-git           # remap keys/buttons (AUR)
+t3code-nightly-bin           # T3 Code (AUR)
+nuviodesktop-bin             # Nuvio media player (AUR)

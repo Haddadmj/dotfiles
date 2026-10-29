@@ -1,1 +1,14 @@
-zsh fzf zoxide eza bat fd dust duf fastfetch git-delta tldr micro pkgfile
+# zsh + CLI tools (oh-my-zsh and plugins are cloned separately)
+zsh                          # shell
+fzf                          # fuzzy finder (Ctrl+R, Tab menu)
+zoxide                       # smarter cd (z)
+eza                          # ls replacement
+bat                          # cat with syntax highlighting
+fd                           # find replacement
+dust                         # du replacement
+duf                          # df replacement
+fastfetch                    # system info
+git-delta                    # nicer git diffs
+tldr                         # short man pages
+micro                        # simple terminal editor
+pkgfile                      # "command not found" package hints

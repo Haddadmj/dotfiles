@@ -42,7 +42,9 @@ gamemode
 ghostty
 git
 git-delta
+github-cli
 grub
+gum
 gwenview
 headsetcontrol
 hypridle
@@ -53,6 +55,7 @@ hyprpaper
 hyprpicker
 hyprshot
 hyprshutdown
+imagemagick
 input-remapper-git
 jdk17-openjdk
 jq

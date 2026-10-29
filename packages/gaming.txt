@@ -1,5 +1,18 @@
-# needs [multilib]
-gamemode lib32-gamemode lib32-pipewire lib32-vulkan-icd-loader
-retroarch retroarch-assets-ozone retroarch-assets-xmb libretro-core-info libretro-shaders-slang
-libretro-beetle-psx-hw libretro-mgba libretro-ppsspp
-pcsx2-latest-bin rpcs3-bin dolphin-emu prismlauncher kde-games-meta
+# Gaming (lib32-* needs [multilib])
+gamemode                     # performance mode for games
+lib32-gamemode               # gamemode for 32-bit games
+lib32-pipewire               # audio for 32-bit games
+lib32-vulkan-icd-loader      # Vulkan for 32-bit games
+retroarch                    # multi-system emulator
+retroarch-assets-ozone       # RetroArch menu theme
+retroarch-assets-xmb         # RetroArch menu theme
+libretro-core-info           # RetroArch core info
+libretro-shaders-slang       # RetroArch shaders
+libretro-beetle-psx-hw       # PS1 core
+libretro-mgba                # GBA core
+libretro-ppsspp              # PSP core
+pcsx2-latest-bin             # PS2 emulator (AUR)
+rpcs3-bin                    # PS3 emulator (AUR)
+dolphin-emu                  # GameCube/Wii emulator
+prismlauncher                # Minecraft launcher
+kde-games-meta               # KDE games collection

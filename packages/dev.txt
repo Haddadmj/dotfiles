@@ -1,1 +1,10 @@
-cmake ninja extra-cmake-modules jdk17-openjdk uv scdoc blender kdenlive kdevelop
+# Development & creative
+cmake                        # build system
+ninja                        # build tool
+extra-cmake-modules          # KDE/Qt cmake modules
+jdk17-openjdk                # Java 17
+uv                           # Python package manager
+scdoc                        # man page generator
+blender                      # 3D
+kdenlive                     # video editor
+kdevelop                     # C++ IDE

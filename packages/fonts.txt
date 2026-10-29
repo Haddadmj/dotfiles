@@ -1,2 +1,10 @@
-noto-fonts noto-fonts-cjk noto-fonts-emoji ttf-dejavu ttf-liberation
-ttf-jetbrains-mono-nerd ttf-meslo-nerd ttf-nerd-fonts-symbols otf-font-awesome
+# Fonts — the bar's icons need a Nerd Font
+ttf-jetbrains-mono-nerd      # main UI/terminal font (Nerd Font)
+ttf-nerd-fonts-symbols       # icon glyphs
+ttf-meslo-nerd               # powerlevel10k prompt font
+otf-font-awesome             # extra icons
+noto-fonts                   # general text
+noto-fonts-cjk               # Chinese/Japanese/Korean
+noto-fonts-emoji             # emoji
+ttf-dejavu                   # fallback font
+ttf-liberation               # Arial/Times-compatible
