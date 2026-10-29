@@ -1,0 +1,13 @@
+{
+  "options": {},
+  "binds": [],
+  "remap": {
+    "Tools|Clipboard history": "SUPER + SHIFT + V",
+    "Apps|Editor": "SUPER + C",
+    "Apps|Launcher": "SUPER + SPACE"
+  },
+  "disabledBinds": [],
+  "env": {},
+  "autostart": [],
+  "disabledAutostart": []
+}

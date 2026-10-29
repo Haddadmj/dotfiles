@@ -1,171 +1,98 @@
-# dotfiles
+# Hyprland dotfiles
 
-Arch Linux + Hyprland desktop: config, theming pipeline, and helper scripts.
+Hyprland (Lua config) · Quickshell bar/launcher/dock/notifications/OSD/lock · matugen colors from the wallpaper.
 
-The bar, dock, launcher and window switcher are a hand-written **Quickshell**
-(QML) setup rather than Waybar/rofi-for-everything, and the whole colour scheme
-is regenerated from the current wallpaper by a single `wallpaper` command.
+## Install on a fresh Arch
 
-## What's in here
+Requirements: a fresh **Arch Linux** install, a normal user with **sudo**, and internet. Run it as that user, not root.
 
-| Path | What it is |
-| --- | --- |
-| `config/hypr/` | Hyprland, split into Lua modules (`hyprland.lua` requires the rest) |
-| `config/quickshell/` | The shell itself — bar, dock, app launcher, alt-tab switcher, tray, clipboard |
-| `config/matugen/` | Templates that turn a wallpaper's palette into every app's colours |
-| `config/alacritty/`, `rofi/`, `wlogout/`, `gtk-3.0/`, `gtk-4.0/`, `qt6ct/` | Terminal, menus, logout screen, widget theming |
-| `local/bin/` | Helper scripts — see below |
-| `local/share/wallpaper-theme/` | `gen-terminal.py`, the terminal-palette generator the `wallpaper` script calls |
-| `defaults/` | Neutral fallback colours, seeded on install when no themed file exists |
-| `packages/` | Commented, grouped package lists for rebuilding a machine |
+    bash <(curl -fsSL https://raw.githubusercontent.com/Haddadmj/dotfiles/main/setup.sh)
 
-### Scripts (`local/bin/`)
+or `git clone https://github.com/Haddadmj/dotfiles ~/dotfiles && ~/dotfiles/install.sh`.
 
-| Script | Does |
-| --- | --- |
-| `wallpaper` | Downloads/sets a wallpaper and retheme everything from it. The centrepiece — see below. |
-| `screenshot` | Region / window / screen capture with annotation and clipboard handling |
-| `powermenu` | wlogout-style power menu |
-| `game-mode` | Toggles the compositor into a low-latency gaming state |
-| `controller` | DualSense / Xbox pad pairing and battery helper |
-| `steam-launch-options` | Generates per-game Steam launch option strings |
-| `keybind-cheatsheet` | Parses `keybinds.lua` and shows every binding in a rofi overlay |
-| `rofi-bluetooth` | Bluetooth device menu |
+The installer asks what you want (package groups, terminal, browser, file manager, editor, keyboard
+layouts, gaps/borders/rounding, dark/light, NVIDIA hybrid GPU, login screen, zsh), shows the exact
+package list for confirmation, backs up existing files to `~/.dotfiles-backup/`, then copies the config.
 
-## Install
+- Unattended: `cp setup.conf.example my.conf`, edit, `./install.sh -c my.conf -y`
+- Change choices later without touching packages: `./install.sh -d`
 
-```sh
-git clone https://github.com/Haddadmj/dotfiles ~/dotfiles
-cd ~/dotfiles
-```
+## Dependencies
 
-**Always dry-run first.** `-n` prints every file it would replace, back up and
-link, and changes nothing:
+Everything below is installed by `install.sh` — this list is so you know what you're getting
+(or can install it by hand). **(AUR)** = installed with paru, everything else is in the official repos.
 
-```sh
-./install.sh -n
-```
+### Installed first (bootstrap)
 
-Read that output. If you're happy with what it says it will do, run it for real:
+| Package | Why |
+|---|---|
+| `git`, `base-devel` | clone this repo, build AUR packages |
+| `gum` | the installer's menus |
+| `paru-bin` **(AUR)** | AUR helper; built from the AUR if missing |
+| `[multilib]` repo | enabled if you say yes — needed for `lib32-*` (NVIDIA, gaming) |
 
-```sh
-./install.sh
-```
+### core — always installed, the desktop won't work without these
 
-`install.sh` symlinks everything into `~/.config`, `~/.local/bin` and
-`~/.local/share`. Anything it would overwrite is moved to
-`~/.dotfiles-backup/<timestamp>/` first, so the run is reversible. Use
-`./install.sh -c` to copy instead of symlink.
+| Package | Why |
+|---|---|
+| `hyprland` | the compositor (0.56+, Lua config) |
+| `quickshell` | bar, launcher, dock, notifications, OSD, lock screen, settings panel |
+| `matugen` | generates colors from the wallpaper (`scripts/theme.sh`) |
+| `hyprpaper` | wallpaper |
+| `hypridle`, `hyprlock` | idle timeout, screen lock |
+| `hyprlauncher`, `hyprpicker`, `hyprshot`, `hyprshutdown` | app menu, color picker, screenshots, shutdown dialog |
+| `xdg-desktop-portal-hyprland`, `xdg-desktop-portal-kde` | screen sharing, file pickers |
+| `qt5-wayland`, `qt6-wayland`, `kde-gtk-config`, `breeze-gtk` | Qt/GTK apps on Wayland with matching theme |
+| `whitesur-icon-theme`, `whitesur-cursor-theme-git` **(AUR)** | icons and cursor |
+| `pipewire`, `pipewire-alsa`, `pipewire-pulse`, `pipewire-jack`, `wireplumber`, `pavucontrol` | audio |
+| `networkmanager`, `network-manager-applet` | network + tray icon |
+| `bluez`, `bluez-utils` | Bluetooth |
+| `polkit-kde-agent`, `kwallet-pam` | admin password prompts, keyring unlock at login |
+| `cliphist`, `wl-clipboard` | clipboard history |
+| `wofi` | fallback wallpaper picker |
+| `wf-recorder`, `satty` | screen recording, screenshot editing |
+| `libvips`, `libnotify`, `jq`, `rsync` | wallpaper thumbnails, notifications, scripts |
+| `headsetcontrol`, `btop` | headset battery and system monitor in the bar |
+| `xdg-user-dirs` | Pictures/Videos/… folders |
 
-Then either log out and back in, or `hyprctl reload`.
+### Optional groups (picked in the installer)
 
-### Uninstall
+| Group | Packages |
+|---|---|
+| **fonts** | `noto-fonts` `noto-fonts-cjk` `noto-fonts-emoji` `ttf-dejavu` `ttf-liberation` `ttf-jetbrains-mono-nerd` `ttf-meslo-nerd` `ttf-nerd-fonts-symbols` `otf-font-awesome` — *the bar's icons need the Nerd Fonts; strongly recommended* |
+| **nvidia** | `nvidia-open` `nvidia-utils` `lib32-nvidia-utils` `nvidia-settings` `nvidia-prime` `libva-nvidia-driver` `linux-headers` |
+| **kde-apps** | `dolphin` `dolphin-plugins` `ark` `kate` `okular` `gwenview` `spectacle` `kcalc` `kfind` `ffmpegthumbs` `kdegraphics-thumbnailers` `kio-admin` `partitionmanager` `kwalletmanager` |
+| **shell** | `zsh` `fzf` `zoxide` `eza` `bat` `fd` `dust` `duf` `fastfetch` `git-delta` `tldr` `micro` `pkgfile` + oh-my-zsh, powerlevel10k, fzf-tab, zsh-autosuggestions, zsh-syntax-highlighting, zsh-completions, you-should-use (git clones) |
+| **apps** | `obsidian` `mpv` `solaar` `piper`, **(AUR)** `vesktop-bin` `code-features` `code-marketplace` `input-remapper-git` `t3code-nightly-bin` `nuviodesktop-bin` |
+| **gaming** | `gamemode` `lib32-gamemode` `lib32-pipewire` `lib32-vulkan-icd-loader` `retroarch` + assets/cores `dolphin-emu` `prismlauncher` `kde-games-meta`, **(AUR)** `pcsx2-latest-bin` `rpcs3-bin` |
+| **dev** | `cmake` `ninja` `extra-cmake-modules` `jdk17-openjdk` `uv` `scdoc` `blender` `kdenlive` `kdevelop` |
+| **virt** | `qemu-desktop` `libvirt` `virt-manager` `edk2-ovmf` `swtpm` `dnsmasq` |
 
-```sh
-./install.sh -u -n    # again, preview first
-./install.sh -u
-```
+### From your choices
 
-Removes only symlinks that point into this repo — real files, and links pointing
-anywhere else, are left alone — then restores the newest backup over the gaps.
-Anything already in place is left in the backup rather than overwritten, and the
-backup directory is never deleted.
+| Choice | Options → package |
+|---|---|
+| Terminal | `ghostty` · `kitty` · `alacritty` · `foot` |
+| Browser | `brave-origin-nightly-bin` (AUR) · `brave-bin` (AUR) · `firefox` · `chromium` · `zen-browser-bin` (AUR) |
+| File manager | `dolphin` · `nautilus` · `thunar` · `nemo` |
+| Editor | `code` · `kate` · `zed` · `gnome-text-editor` |
+| Login screen | `plasma-login-manager` · `sddm` · none (Hyprland starts on TTY1 login) |
 
-### Packages
+Package lists live in `packages/*.txt` — edit them to add or remove things.
 
-Both lists are commented and grouped by section, so you can delete whole
-categories you don't want. The `sed` strips the comments, which pacman can't
-parse:
+## NVIDIA hybrid graphics
 
-```sh
-sed 's/#.*//' packages/pacman.txt | sudo pacman -S --needed -
-sed 's/#.*//' packages/aur.txt    | paru -S --needed -
-```
+If the machine has an NVIDIA card **and** an integrated GPU, the installer can write
+`/etc/udev/rules.d/99-gpu-names.rules` (detected from `lspci`) so Hyprland renders on the NVIDIA card.
+Without NVIDIA, the NVIDIA-only env vars in `modules/env.lua` are commented out.
 
-The AUR line needs `paru` to exist already — it's what installs the list, so it
-isn't in it. Bootstrap it first, before you clone this repo:
+## Keybinds to know
 
-```sh
-sudo pacman -S --needed base-devel git
-git clone https://aur.archlinux.org/paru.git /tmp/paru
-cd /tmp/paru && makepkg -si
-```
+`SUPER+,` settings panel · `SUPER+W` pick wallpaper · `SUPER+SHIFT+W` random wallpaper · `SUPER+CTRL+W` light/dark
 
-Only the **Hyprland desktop** and **Fonts** sections are actually required.
-Base-system, NVIDIA, gaming, emulation and personal-application sections are
-labelled and safe to drop. Read `packages/pacman.txt` before running it — the
-base section assumes an AMD CPU, btrfs and GRUB/EFI.
+## Keep it up to date
 
-### Shell
+    ./snapshot.sh && git add -A && git commit -m snapshot && git push
 
-`home/zshrc` expects **oh-my-zsh** and **powerlevel10k**, and neither comes from
-a package — they're git clones the package lists can't cover. Without them zsh
-errors on `source $ZSH/oh-my-zsh.sh` at every prompt.
-
-```sh
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
-
-ZSH_CUSTOM="$HOME/.oh-my-zsh/custom"
-git clone --depth=1 https://github.com/romkatv/powerlevel10k.git         "$ZSH_CUSTOM/themes/powerlevel10k"
-git clone --depth=1 https://github.com/zsh-users/zsh-autosuggestions.git "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
-git clone --depth=1 https://github.com/zsh-users/zsh-syntax-highlighting.git "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
-```
-
-Run this **before** `install.sh` — the oh-my-zsh installer writes its own
-`~/.zshrc`, which would clobber the one being linked in. If you've already
-installed, just re-run `./install.sh` afterwards to put the link back.
-
-`home/p10k.zsh` (→ `~/.p10k.zsh`) is the prompt configuration, so you get this
-prompt rather than p10k's first-run wizard. Delete it and run `p10k configure`
-if you'd rather pick your own.
-
-The remaining plugins in `plugins=(…)` — `git`, `sudo`, `archlinux`, `extract`,
-`fzf`, `zoxide`, `history-substring-search` and friends — all ship with
-oh-my-zsh, so nothing extra is needed for those.
-
-## The wallpaper → colour pipeline
-
-This is the part worth understanding before editing anything colour-related.
-
-```
-wallpaper  ──▶  matugen  ──▶  config/matugen/templates/*  ──▶  generated files
-```
-
-Running `wallpaper` extracts a palette from the image and matugen renders each
-template to its destination. **These destinations are generated — editing them
-does nothing, the next `wallpaper` run overwrites them:**
-
-- `config/hypr/colors.lua`
-- `config/hypr/hyprlock.conf`
-- `config/quickshell/Colors.qml`
-- `config/wlogout/style.css`
-- `config/gtk-3.0/colors.css`, `config/gtk-4.0/colors.css`
-- `config/alacritty/colors.toml`
-
-To change how something is coloured, edit the matching file in
-`config/matugen/templates/` (or `local/share/wallpaper-theme/gen-terminal.py`
-for the terminal palette), then re-run `wallpaper`.
-
-Those seven paths are **gitignored**, so retheming doesn't leave the repo dirty
-on every wallpaper change. A neutral grey-blue fallback for each lives in
-`defaults/`, and `install.sh` seeds it only where no themed file exists — which
-matters because `look.lua` does `require("colors")` and most of the Quickshell
-QML references `Colors.`, so a clone missing them would fail to start a session
-at all. Run `wallpaper` once and your real colours replace the fallback.
-
-### Wallhaven API key
-
-`wallpaper` can pull images from Wallhaven, which needs an API key for NSFW-
-capable searches. It reads `$WALLHAVEN_API_KEY`, falling back to
-`~/.config/wallpaper/wallhaven-key`.
-
-**That key is deliberately not in this repo.** Get your own from
-<https://wallhaven.cc/settings/account> and drop it in:
-
-```sh
-mkdir -p ~/.config/wallpaper
-printf '%s' 'YOUR_KEY' > ~/.config/wallpaper/wallhaven-key
-chmod 600 ~/.config/wallpaper/wallhaven-key
-```
-
-Everything except Wallhaven search works fine without it.
+What gets saved is listed in `files.txt`. The wallhaven API key is never committed —
+copy `~/.config/wallhaven/apikey` by hand.

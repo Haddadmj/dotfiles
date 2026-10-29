@@ -1,0 +1,37 @@
+# Ghostty config — `ghostty +show-config --default --docs` lists every option
+# Reload with ctrl+shift+, or `pkill -SIGUSR2 ghostty` (theme.sh does this)
+
+# Font
+font-family = JetBrainsMono Nerd Font
+font-size = 11
+font-feature = calt
+font-feature = liga
+adjust-cell-height = 10%
+
+# Look — colors come from matugen (hypr/scripts/theme.sh writes ./colors)
+config-file = ?colors
+# Hyprland blurs behind transparent windows (look.lua), so no client blur needed
+background-opacity = 0.85
+window-padding-x = 10
+window-padding-y = 8
+window-padding-balance = true
+# Hyprland draws borders; no title bar
+window-decoration = none
+gtk-titlebar = false
+# one process for all windows: new windows open instantly
+gtk-single-instance = true
+
+# Cursor
+cursor-style = bar
+cursor-style-blink = true
+shell-integration-features = no-cursor,sudo,title
+
+# Behaviour
+mouse-hide-while-typing = true
+copy-on-select = clipboard
+confirm-close-surface = false
+# bytes (~50 MB)
+scrollback-limit = 50000000
+
+# Scroll 1 line per wheel step (default discrete:3) for finer mouse scrolling
+mouse-scroll-multiplier = precision:1,discrete:1

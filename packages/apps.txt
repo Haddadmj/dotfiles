@@ -1,0 +1,2 @@
+obsidian vesktop-bin code-features code-marketplace solaar piper input-remapper-git
+t3code-nightly-bin nuviodesktop-bin mpv

@@ -1,0 +1,1 @@
+zsh fzf zoxide eza bat fd dust duf fastfetch git-delta tldr micro pkgfile

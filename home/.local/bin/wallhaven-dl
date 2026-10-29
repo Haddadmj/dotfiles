@@ -1,0 +1,176 @@
+#!/usr/bin/env bash
+# wallhaven-dl — download wallpapers from wallhaven.cc (PNG first, then JPG)
+# and save each wallpaper's color palette.
+#
+# API docs: https://wallhaven.cc/help/api
+# API key is read from $WALLHAVEN_API_KEY or ~/.config/wallhaven/apikey
+# Apply a downloaded wallpaper to KDE with: wallhaven-apply
+
+set -euo pipefail
+
+API="https://wallhaven.cc/api/v1"
+OUT_DIR="${WALLHAVEN_DIR:-$HOME/Pictures/Wallpapers}"
+KEY_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/wallhaven/apikey"
+API_KEY="${WALLHAVEN_API_KEY:-}"
+[[ -z $API_KEY && -r $KEY_FILE ]] && API_KEY=$(<"$KEY_FILE")
+
+die()  { printf '\e[31merror:\e[0m %s\n' "$*" >&2; exit 1; }
+info() { printf '\e[36m::\e[0m %s\n' "$*" >&2; }
+
+usage() {
+    cat <<EOF
+Usage: wallhaven-dl [options]
+
+Downloads wallpapers as <dir>/<purity>/<id>.png (preferred) or .jpg, where
+<purity> is sfw, sketchy or nsfw, and saves each palette to
+<dir>/.colors/<id>.txt
+
+Options:
+  -n NUM        number of wallpapers to download        (default: 10)
+  -p PURITY     comma list of sfw,sketchy,nsfw           (default: sfw)
+  -c CATS       comma list of general,anime,people       (default: all)
+  -q QUERY      search query, e.g. "nature -anime", "@user", "like:yq78lg"
+  -s SORT       date_added|relevance|random|views|favorites|toplist
+                                                         (default: toplist)
+  -t RANGE      toplist range: 1d|3d|1w|1M|3M|6M|1y      (default: 1M)
+  -r RES        minimum resolution, e.g. 2560x1440
+  -R RATIOS     aspect ratios, e.g. 16x9,16x10
+  -C HEX        only wallpapers containing this color, e.g. 660000
+  -o DIR        output directory                         (default: $OUT_DIR)
+  -h            show this help
+
+Examples:
+  wallhaven-dl -n 20 -p sfw,sketchy -r 2560x1440
+  wallhaven-dl -q "cyberpunk" -s random -c general
+  wallhaven-dl -p nsfw -n 5
+EOF
+}
+
+# Convert "sfw,nsfw" style lists into wallhaven's 3-digit flag strings.
+flags() {   # flags "<list>" name1 name2 name3
+    local list=",$1," out="" name
+    shift
+    for name in "$@"; do
+        [[ $list == *",$name,"* ]] && out+=1 || out+=0
+    done
+    [[ $out == 000 ]] && die "invalid selection '${list//,/ }' (choose from: $*)"
+    printf '%s' "$out"
+}
+
+# GET an API endpoint, retrying when rate limited (45 calls/min).
+api_get() {   # api_get <path> [curl --data-urlencode args...]
+    local path=$1 body code tries=0
+    shift
+    local auth=()
+    [[ -n $API_KEY ]] && auth=(-H "X-API-Key: $API_KEY")
+    while :; do
+        body=$(curl -sS -G -w '\n%{http_code}' "${auth[@]}" "$@" "$API/$path") \
+            || die "network error contacting wallhaven"
+        code=${body##*$'\n'}
+        body=${body%$'\n'*}
+        case $code in
+            200) printf '%s' "$body"; return 0 ;;
+            429) (( ++tries > 3 )) && die "rate limited too many times"
+                 info "rate limited, waiting 60s..."; sleep 60 ;;
+            401) die "unauthorized (401) — NSFW needs a valid API key; check $KEY_FILE" ;;
+            403) die "forbidden (403) — query rejected; note id:/like: can't be combined with other terms" ;;
+            *)   die "API returned HTTP $code" ;;
+        esac
+    done
+}
+
+have() {   # already downloaded (any purity folder / extension / naming)?
+    local d f
+    for d in "$OUT_DIR" "$OUT_DIR"/{sfw,sketchy,nsfw}; do
+        for f in "$d/$1".png "$d/$1".jpg "$d/wallhaven-$1".png "$d/wallhaven-$1".jpg; do
+            [[ -f $f ]] && return 0
+        done
+    done
+    return 1
+}
+
+command -v curl >/dev/null || die "curl is required"
+command -v jq   >/dev/null || die "jq is required"
+
+count=10 purity=sfw cats=general,anime,people query="" sorting=toplist
+range=1M atleast="" ratios="" color=""
+while getopts ':n:p:c:q:s:t:r:R:C:o:h' opt; do
+    case $opt in
+        n) count=$OPTARG ;;
+        p) purity=$OPTARG ;;
+        c) cats=$OPTARG ;;
+        q) query=$OPTARG ;;
+        s) sorting=$OPTARG ;;
+        t) range=$OPTARG ;;
+        r) atleast=$OPTARG ;;
+        R) ratios=$OPTARG ;;
+        C) color=${OPTARG#\#} ;;
+        o) OUT_DIR=$OPTARG ;;
+        h) usage; exit 0 ;;
+        :) die "option -$OPTARG needs a value" ;;
+        *) die "unknown option -$OPTARG (see -h)" ;;
+    esac
+done
+[[ $count =~ ^[0-9]+$ && $count -gt 0 ]] || die "-n must be a positive number"
+
+purity_flags=$(flags "$purity" sfw sketchy nsfw)
+cat_flags=$(flags "$cats" general anime people)
+[[ ${purity_flags:2:1} == 1 && -z $API_KEY ]] && die "NSFW needs an API key in $KEY_FILE"
+
+mkdir -p "$OUT_DIR/.colors"
+info "saving to $OUT_DIR (purity=$purity, categories=$cats, sort=$sorting)"
+
+got=0
+# PNG first; fill whatever is left with JPG.
+for type in png jpg; do
+    (( got >= count )) && break
+    page=1 last=1 seed=""
+    while (( got < count && page <= last )); do
+        args=(
+            --data-urlencode "q=${query:+$query }type:$type"
+            --data-urlencode "categories=$cat_flags"
+            --data-urlencode "purity=$purity_flags"
+            --data-urlencode "sorting=$sorting"
+            --data-urlencode "page=$page"
+        )
+        [[ $sorting == toplist ]] && args+=(--data-urlencode "topRange=$range")
+        [[ -n $seed    ]] && args+=(--data-urlencode "seed=$seed")
+        [[ -n $atleast ]] && args+=(--data-urlencode "atleast=$atleast")
+        [[ -n $ratios  ]] && args+=(--data-urlencode "ratios=$ratios")
+        [[ -n $color   ]] && args+=(--data-urlencode "colors=$color")
+
+        resp=$(api_get search "${args[@]}")
+        last=$(jq -r '.meta.last_page // 1' <<<"$resp")
+        seed=$(jq -r '.meta.seed // empty' <<<"$resp")
+        (( page == 1 )) && info "$type: $(jq -r '.meta.total' <<<"$resp") matches"
+
+        while IFS=$'\t' read -r id url wpurity colors; do
+            (( got >= count )) && break
+            have "$id" && continue
+            ext=${url##*.}
+            mkdir -p "$OUT_DIR/$wpurity"
+            dest="$OUT_DIR/$wpurity/$id.$ext"
+            printf '  \e[32m↓\e[0m %s/%s.%s ' "$wpurity" "$id" "$ext" >&2
+            if curl -sSfL --retry 2 -o "$dest.part" "$url"; then
+                mv "$dest.part" "$dest"
+                tr ',' '\n' <<<"$colors" > "$OUT_DIR/.colors/$id.txt"
+                for hex in ${colors//,/ }; do     # inline palette preview
+                    hex=${hex#\#}
+                    printf '\e[48;2;%d;%d;%dm  \e[0m' "0x${hex:0:2}" "0x${hex:2:2}" "0x${hex:4:2}" >&2
+                done
+                printf '\n' >&2
+                got=$((got + 1))
+            else
+                rm -f "$dest.part"
+                printf '\e[31mfailed\e[0m\n' >&2
+            fi
+        done < <(jq -r '.data[] | [.id, .path, .purity, (.colors | join(","))] | @tsv' <<<"$resp")
+
+        page=$((page + 1))
+        sleep 1.5   # stay under 45 API calls/minute
+    done
+done
+
+info "downloaded $got new wallpaper(s)"
+(( got < count )) && info "fewer than requested — no more new matches for these filters"
+exit 0

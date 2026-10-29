@@ -1,0 +1,17 @@
+{
+    "bg": "#101417",
+    "fg": "#e0e3e8",
+    "fgDim": "#c1c7ce",
+    "primary": "#95cdf7",
+    "primaryText": "#00344e",
+    "primaryC": "#004b6f",
+    "primaryCText": "#c9e6ff",
+    "secondary": "#384956",
+    "secondaryText": "#d3e5f5",
+    "tertiary": "#cfc0e8",
+    "tertiaryText": "#352b4b",
+    "error": "#ffb4ab",
+    "errorText": "#690005",
+    "outline": "#41474d",
+    "surfaceHigh": "#262a2e"
+}

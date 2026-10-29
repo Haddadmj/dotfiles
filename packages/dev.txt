@@ -1,0 +1,1 @@
+cmake ninja extra-cmake-modules jdk17-openjdk uv scdoc blender kdenlive kdevelop

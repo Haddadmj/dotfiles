@@ -1,0 +1,2 @@
+dolphin dolphin-plugins ark kate okular gwenview spectacle kcalc kfind
+ffmpegthumbs kdegraphics-thumbnailers kio-admin partitionmanager kwalletmanager

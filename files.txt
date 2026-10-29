@@ -1,0 +1,25 @@
+# <group> <path relative to $HOME>   — what snapshot.sh saves and install.sh restores.
+# Paths under /home/<you> are stored as __HOME__ and rewritten for the new user on install.
+core  .config/hypr
+core  .config/quickshell
+core  .config/ghostty
+core  .config/kitty
+core  .config/waybar
+core  .config/gtk-3.0
+core  .config/gtk-4.0
+core  .config/fontconfig
+core  .config/xsettingsd
+core  .config/kdeglobals
+core  .config/mimeapps.list
+core  .config/wallhaven
+core  .config/systemd/user
+core  .local/bin/wallhaven-apply
+core  .local/bin/wallhaven-dl
+core  .local/bin/sync-applications-folder
+core  .local/share/color-schemes
+core  .cache/theme-state
+shell .zshrc
+shell .p10k.zsh
+shell .config/fastfetch
+shell .config/btop
+shell .config/micro

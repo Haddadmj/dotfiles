@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+# Build a macOS-style ~/Applications folder from installed .desktop launchers.
+#   - GUI apps go in ~/Applications
+#   - system tools / helpers go in ~/Applications/Utilities
+#   - terminal-only apps and hidden entries are skipped
+set -u
+
+# ---- Overrides (launcher file names without .desktop) ----
+FORCE_MAIN=(systemsettings org.kde.konsole org.kde.dolphin org.kde.kcalc)
+FORCE_UTILITIES=(qv4l2 qvidcap links)
+HIDE=(org.kde.kdevelop_ps)
+
+# Categories that make something a "real app" (stays in main folder)
+MAIN_CATS='FileManager|TerminalEmulator|TextEditor|Calculator|IDE|WebBrowser|Game|Office|Graphics|AudioVideo|Audio|Video|Email|InstantMessaging|Chat'
+# Categories that mark a utility
+UTIL_CATS='System|Settings|Utility|Development|Monitor|HardwareSettings|Security|Filesystem'
+
+dest="$HOME/Applications"
+util="$dest/Utilities"
+marker='X-AppFolder-Source'
+mkdir -p "$util"
+[[ -f $util/.directory ]] || printf '[Desktop Entry]\nIcon=folder-blue\n' > "$util/.directory"
+
+dirs=(
+  /usr/share/applications
+  /var/lib/flatpak/exports/share/applications
+  "$HOME/.local/share/flatpak/exports/share/applications"
+  "$HOME/.local/share/applications"   # last: user entries override system ones
+)
+
+in_list() { local x=$1; shift; for i in "$@"; do [[ $i == "$x" ]] && return 0; done; return 1; }
+
+declare -A src target
+for d in "${dirs[@]}"; do
+  [[ -d $d ]] || continue
+  for f in "$d"/*.desktop; do
+    [[ -e $f ]] || continue
+    id=$(basename "$f" .desktop)
+    entry=$(sed -n '/^\[Desktop Entry\]/,/^\[/p' "$f")
+    unset 'src[$id]' 'target[$id]'
+    in_list "$id" "${HIDE[@]}" && continue
+    grep -qE '^(NoDisplay|Hidden)=true' <<<"$entry" && continue
+    grep -q '^Type=Application' <<<"$entry" || continue
+    grep -q '^Terminal=true' <<<"$entry" && continue
+    grep -qE '^NotShowIn=.*KDE' <<<"$entry" && continue
+    if only=$(grep -m1 '^OnlyShowIn=' <<<"$entry"); then
+      [[ $only == *KDE* ]] || continue
+    fi
+    cats=$(grep -m1 '^Categories=' <<<"$entry" | cut -d= -f2)
+    if in_list "$id" "${FORCE_MAIN[@]}"; then
+      t=$dest
+    elif in_list "$id" "${FORCE_UTILITIES[@]}"; then
+      t=$util
+    elif grep -qE "(^|;)($MAIN_CATS)(;|$)" <<<"$cats"; then
+      t=$dest
+    elif grep -qE "(^|;)($UTIL_CATS)(;|$)" <<<"$cats"; then
+      t=$util
+    else
+      t=$dest
+    fi
+    src[$id]=$f
+    target[$id]=$t
+  done
+done
+
+# Write copies (executable so KDE treats them as trusted launchers)
+for id in "${!src[@]}"; do
+  out="${target[$id]}/$id.desktop"
+  content="$(cat "${src[$id]}")"$'\n'"$marker=${src[$id]}"
+  if [[ ! -f $out || -L $out ]] || [[ "$(cat "$out")" != "$content" ]]; then
+    rm -f "$out"
+    printf '%s\n' "$content" > "$out"
+    chmod 755 "$out"
+  fi
+done
+
+# Remove stale entries we created (old symlinks, or copies that moved/vanished)
+for f in "$dest"/*.desktop "$util"/*.desktop; do
+  [[ -e $f || -L $f ]] || continue
+  id=$(basename "$f" .desktop)
+  if [[ -L $f ]]; then rm -f "$f"; continue; fi
+  grep -q "^$marker=" "$f" || continue   # leave user-made files alone
+  [[ -n ${src[$id]:-} && ${target[$id]} == "$(dirname "$f")" ]] || rm -f "$f"
+done

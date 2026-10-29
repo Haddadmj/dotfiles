@@ -1,0 +1,1 @@
+qemu-desktop libvirt virt-manager edk2-ovmf swtpm dnsmasq

@@ -1,0 +1,5 @@
+[Path]
+PathChanged=/usr/share/applications
+PathChanged=%h/.local/share/applications
+[Install]
+WantedBy=default.target

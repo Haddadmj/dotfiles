@@ -1,0 +1,2 @@
+noto-fonts noto-fonts-cjk noto-fonts-emoji ttf-dejavu ttf-liberation
+ttf-jetbrains-mono-nerd ttf-meslo-nerd ttf-nerd-fonts-symbols otf-font-awesome

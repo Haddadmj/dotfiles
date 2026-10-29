@@ -1,0 +1,2 @@
+# needs [multilib] for lib32-nvidia-utils
+nvidia-open nvidia-utils lib32-nvidia-utils nvidia-settings nvidia-prime libva-nvidia-driver linux-headers

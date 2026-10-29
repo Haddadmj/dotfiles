@@ -1,0 +1,11 @@
+# Hyprland desktop + everything the Quickshell shell and scripts call
+hyprland hyprpaper hypridle hyprlock hyprlauncher hyprpicker hyprshot hyprshutdown
+quickshell matugen
+xdg-desktop-portal-hyprland xdg-desktop-portal-kde xdg-user-dirs
+qt5-wayland qt6-wayland kde-gtk-config breeze-gtk
+whitesur-icon-theme whitesur-cursor-theme-git
+pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber pavucontrol
+networkmanager network-manager-applet bluez bluez-utils
+polkit-kde-agent kwallet-pam
+cliphist wl-clipboard wofi wf-recorder satty libvips libnotify jq rsync
+headsetcontrol btop

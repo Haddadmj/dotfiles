@@ -1,0 +1,182 @@
+#!/usr/bin/env bash
+# wallhaven-apply — set a downloaded wallhaven wallpaper on KDE Plasma and
+# use its palette for the accent color (optionally Breeze Light/Dark too).
+#
+# Palettes come from <dir>/.colors/<id>.txt (written by wallhaven-dl),
+# or are fetched from the wallhaven API if missing.
+
+set -euo pipefail
+
+API="https://wallhaven.cc/api/v1"
+WP_DIR="${WALLHAVEN_DIR:-$HOME/Pictures/Wallpapers}"
+KEY_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/wallhaven/apikey"
+API_KEY="${WALLHAVEN_API_KEY:-}"
+[[ -z $API_KEY && -r $KEY_FILE ]] && API_KEY=$(<"$KEY_FILE")
+
+die()  { printf '\e[31merror:\e[0m %s\n' "$*" >&2; exit 1; }
+info() { printf '\e[36m::\e[0m %s\n' "$*" >&2; }
+
+usage() {
+    cat <<EOF
+Usage: wallhaven-apply [options] [<id|file>]
+
+With no id/file, a random wallpaper from $WP_DIR is used.
+
+Options:
+  -m        also switch Breeze Dark / Breeze Light to match the wallpaper
+  -A        don't change the accent color (wallpaper only)
+  -c        only show the palette, don't apply anything
+  -h        show this help
+
+Examples:
+  wallhaven-apply                 # random wallpaper + matching accent
+  wallhaven-apply -m d8vvlo       # specific one, auto dark/light scheme
+  wallhaven-apply -c d8vvlo       # just print its color palette
+EOF
+}
+
+# "yq78lg", "yq78lg.png", "/path/wallhaven-yq78lg.jpg" -> yq78lg
+to_id() {
+    local name=${1##*/}
+    name=${name%.*}
+    printf '%s' "${name#wallhaven-}"
+}
+
+# Palette for an id: saved copy if present, otherwise ask the API.
+palette() {
+    local id=$1 file="$WP_DIR/.colors/$1.txt" json auth=()
+    if [[ -s $file ]]; then
+        cat "$file"
+        return
+    fi
+    [[ -n $API_KEY ]] && auth=(-H "X-API-Key: $API_KEY")
+    json=$(curl -sSf "${auth[@]}" "$API/w/$id") || return 1
+    mkdir -p "$WP_DIR/.colors"
+    jq -r '.data.colors[]' <<<"$json" | tee "$file"
+}
+
+swatches() {   # print hex colors as truecolor blocks
+    local hex
+    for hex in "$@"; do
+        hex=${hex#\#}
+        printf '\e[48;2;%d;%d;%dm      \e[0m #%s\n' \
+            "0x${hex:0:2}" "0x${hex:2:2}" "0x${hex:4:2}" "$hex"
+    done
+}
+
+# Most vivid color (highest saturation, not near-black) -> accent.
+pick_accent() {
+    awk '
+        function h2d(h) { return index("0123456789abcdef", tolower(h)) - 1 }
+        function byte(s, i) { return h2d(substr(s, i, 1)) * 16 + h2d(substr(s, i + 1, 1)) }
+        {
+            hex = $1; sub(/^#/, "", hex)
+            r = byte(hex, 1); g = byte(hex, 3); b = byte(hex, 5)
+            mx = r; if (g > mx) mx = g; if (b > mx) mx = b
+            mn = r; if (g < mn) mn = g; if (b < mn) mn = b
+            sat = mx ? (mx - mn) / mx : 0
+            score = sat * (mx >= 64 ? 1 : 0.2)
+            if (NR == 1 || score > best) { best = score; pick = "#" hex }
+        }
+        END { if (pick) print pick }'
+}
+
+# Average perceived luminance of the palette (0-255).
+luminance() {
+    awk '
+        function h2d(h) { return index("0123456789abcdef", tolower(h)) - 1 }
+        function byte(s, i) { return h2d(substr(s, i, 1)) * 16 + h2d(substr(s, i + 1, 1)) }
+        { hex = $1; sub(/^#/, "", hex)
+          sum += 0.299 * byte(hex, 1) + 0.587 * byte(hex, 3) + 0.114 * byte(hex, 5); n++ }
+        END { print (n ? int(sum / n) : 128) }'
+}
+
+find_file() {   # downloaded file for an id (top level or a purity folder)
+    local d f
+    for d in "$WP_DIR" "$WP_DIR"/{sfw,sketchy,nsfw}; do
+        for f in "$d/$1".png "$d/$1".jpg "$d/wallhaven-$1".png "$d/wallhaven-$1".jpg; do
+            [[ -f $f ]] && { printf '%s' "$f"; return 0; }
+        done
+    done
+    return 1
+}
+
+match_scheme=0 set_accent=1 colors_only=0
+while getopts ':mAch' opt; do
+    case $opt in
+        m) match_scheme=1 ;;
+        A) set_accent=0 ;;
+        c) colors_only=1 ;;
+        h) usage; exit 0 ;;
+        *) die "unknown option -$OPTARG (see -h)" ;;
+    esac
+done
+shift $((OPTIND - 1))
+target=${1:-}
+
+# Resolve which wallpaper to use.
+if [[ -z $target ]]; then
+    file=$(find "$WP_DIR" -maxdepth 2 -path '*/.colors' -prune -o -type f \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' \) -print | shuf -n1)
+    [[ -n $file ]] || die "no wallpapers in $WP_DIR — run wallhaven-dl first"
+elif [[ -f $target ]]; then
+    file=$(realpath "$target")
+else
+    file=$(find_file "$(to_id "$target")") || file=""
+fi
+id=$(to_id "${file:-$target}")
+
+if (( colors_only )); then
+    mapfile -t cols < <(palette "$id") || true
+    (( ${#cols[@]} )) || die "no palette found for $id"
+    swatches "${cols[@]}"
+    printf 'accent: %s\n' "$(printf '%s\n' "${cols[@]}" | pick_accent)"
+    exit 0
+fi
+
+[[ -n $file ]] || die "'$target' is not downloaded in $WP_DIR"
+command -v plasma-apply-wallpaperimage >/dev/null || die "KDE Plasma tools not found"
+
+info "wallpaper: $file"
+plasma-apply-wallpaperimage "$file" >/dev/null
+
+(( set_accent || match_scheme )) || exit 0
+
+cols=$(palette "$id" 2>/dev/null) && [[ -n $cols ]] \
+    || { info "no palette for $id (not a wallhaven id?), colors unchanged"; exit 0; }
+
+# Current scheme, so we can keep it unless -m was given.
+scheme=$(plasma-apply-colorscheme --list-schemes | sed -n 's/^ \* \(.*\) (current color scheme)$/\1/p')
+scheme=${scheme:-BreezeDark}
+if (( match_scheme )); then
+    if (( $(luminance <<<"$cols") < 128 )); then scheme=BreezeDark; else scheme=BreezeLight; fi
+fi
+
+if (( set_accent )); then
+    accent=$(pick_accent <<<"$cols")
+    info "color scheme: $scheme, accent: $accent"
+    swatches "$accent"
+    plasma-apply-colorscheme --accent-color "$accent" "$scheme" >/dev/null
+else
+    info "color scheme: $scheme"
+    plasma-apply-colorscheme "$scheme" >/dev/null
+fi
+
+# plasma-apply-colorscheme announces the change before running apps can see the
+# new kdeglobals, so they reload stale colors. Re-announce once it has settled.
+sleep 1
+dbus-send --session --type=signal /KGlobalSettings org.kde.KGlobalSettings.notifyChange int32:0 int32:0 || true
+command -v qdbus6 >/dev/null && qdbus6 org.kde.KWin /KWin reconfigure >/dev/null 2>&1 || true
+
+# KDE's GTK bridge doesn't regenerate ~/.config/gtk-{3,4}.0/colors.css for CLI
+# changes — reloading its kded module forces that.
+if command -v qdbus6 >/dev/null &&
+   qdbus6 org.kde.kded6 /kded org.kde.kded6.loadedModules 2>/dev/null | grep -qx gtkconfig; then
+    gtk_css="${XDG_CONFIG_HOME:-$HOME/.config}/gtk-3.0/colors.css"
+    # kded may not have re-read kdeglobals yet, so retry until the new accent shows up
+    for _ in 1 2 3 4 5; do
+        sleep 1
+        qdbus6 org.kde.kded6 /kded org.kde.kded6.unloadModule gtkconfig >/dev/null
+        qdbus6 org.kde.kded6 /kded org.kde.kded6.loadModule gtkconfig >/dev/null
+        [[ -z ${accent:-} ]] || grep -qi "${accent#\#}" "$gtk_css" 2>/dev/null && break
+    done
+fi

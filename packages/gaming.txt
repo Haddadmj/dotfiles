@@ -1,0 +1,5 @@
+# needs [multilib]
+gamemode lib32-gamemode lib32-pipewire lib32-vulkan-icd-loader
+retroarch retroarch-assets-ozone retroarch-assets-xmb libretro-core-info libretro-shaders-slang
+libretro-beetle-psx-hw libretro-mgba libretro-ppsspp
+pcsx2-latest-bin rpcs3-bin dolphin-emu prismlauncher kde-games-meta

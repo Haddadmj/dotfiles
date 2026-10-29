@@ -1,0 +1,5 @@
+[Unit]
+Description=Sync ~/Applications
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/sync-applications-folder
