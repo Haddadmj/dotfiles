@@ -4,6 +4,8 @@ Hyprland (Lua config) · Quickshell bar/launcher/dock/notifications/OSD/lock · 
 
 ## Install on a fresh Arch
 
+Step-by-step from a clean `archinstall`: **[INSTALL.md](INSTALL.md)**.
+
 Requirements: a fresh **Arch Linux** install, a normal user with **sudo**, and internet. Run it as that user, not root.
 
     bash <(curl -fsSL https://raw.githubusercontent.com/Haddadmj/dotfiles/main/setup.sh)
