@@ -44,6 +44,25 @@ Scope {
         pam.start()
     }
 
+    // auto-unlock while typing: unix_chkpwd checks silently (no faillock strikes), real PAM runs only once it matches
+    Process {
+        id: check
+        property string tried: ""
+        command: ["unix_chkpwd", Quickshell.env("USER"), "nullok"]
+        stdinEnabled: true
+        onStarted: { write(tried + "\0"); stdinEnabled = false }
+        onExited: code => {
+            stdinEnabled = true
+            if (tried !== root.password) checkDelay.restart()
+            else if (code === 0) root.submit()
+        }
+    }
+    Timer {
+        id: checkDelay
+        interval: 150
+        onTriggered: if (!check.running && root.password && !pam.active) { check.tried = root.password; check.running = true }
+    }
+
     SequentialAnimation { id: shake; loops: 2
         NumberAnimation { target: root; property: "shakeX"; to: 12; duration: 50 }
         NumberAnimation { target: root; property: "shakeX"; to: -12; duration: 80 }
@@ -133,7 +152,7 @@ Scope {
                             font.family: Theme.font
                             font.pixelSize: 16
                             enabled: !pam.active
-                            onTextChanged: { root.password = text; if (text) root.failed = false }
+                            onTextChanged: { root.password = text; if (text) { root.failed = false; checkDelay.restart() } }
                             Keys.onReturnPressed: root.submit()
                             Keys.onEnterPressed: root.submit()
                             Keys.onEscapePressed: text = ""

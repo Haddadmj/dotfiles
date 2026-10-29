@@ -74,7 +74,7 @@ hl.window_rule({
 -- Blur behind the Quickshell bar, popups, launcher and notifications (translucent backgrounds)
 hl.layer_rule({
     name  = "blur-quickshell",
-    match = { namespace = "^quickshell:(bar|dock|notifications|notifcenter|osd)$" },
+    match = { namespace = "^quickshell:(bar|dock|notifications|notifcenter|osd|session)$" },
     blur  = true,
     ignore_alpha = 0.1,
 })

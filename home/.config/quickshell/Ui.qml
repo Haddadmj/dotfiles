@@ -14,6 +14,7 @@ Singleton {
     property bool screenshot: false
     property bool cheatsheet: false
     property bool hyprSettings: false
+    property bool session: false
     property string hyprSettingsTab: "look"   // look, binds, autostart, env
     property bool locked: false
     property bool keepAwake: false     // idle inhibitor, held by the bar
@@ -23,5 +24,5 @@ Singleton {
         if (launcher && launcherMode === mode) launcher = false
         else { launcherMode = mode; launcher = true }
     }
-    function closeAll() { popup = ""; launcher = false; notifCenter = false; wallpapers = false; quickSettings = false; overview = false; screenshot = false; cheatsheet = false; hyprSettings = false }
+    function closeAll() { popup = ""; launcher = false; notifCenter = false; wallpapers = false; quickSettings = false; overview = false; screenshot = false; cheatsheet = false; hyprSettings = false; session = false }
 }

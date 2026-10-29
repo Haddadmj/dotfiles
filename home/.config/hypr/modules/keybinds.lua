@@ -34,7 +34,7 @@ bind(mainMod .. " + CTRL + W",  hl.dsp.exec_cmd(scripts .. "/theme.sh toggle-mod
 
 -- Windows / session
 bind(mainMod .. " + Q", hl.dsp.window.close(), "Windows|Close window")
-bind(mainMod .. " + M", hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch 'hl.dsp.exit()'"), "Session|Log out")
+bind(mainMod .. " + M", hl.dsp.exec_cmd("qs ipc call session toggle"), "Session|Power menu")  -- quickshell session menu
 bind(mainMod .. " + V", hl.dsp.window.float({ action = "toggle" }), "Windows|Toggle floating")
 bind(mainMod .. " + P", hl.dsp.window.pseudo(), "Windows|Pseudo-tile")
 bind(mainMod .. " + J", hl.dsp.layout("togglesplit"), "Windows|Toggle split direction")    -- dwindle only

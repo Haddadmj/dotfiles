@@ -1,6 +1,6 @@
 //@ pragma UseQApplication
 // Quickshell desktop shell: bar, launcher, notifications, OSD. Colors from matugen (colors.json).
-// Control from Hyprland binds:  qs ipc call launcher toggle | cheatsheet toggle | hyprsettings toggle | launcher clipboard | wallpapers toggle | dock toggle | dock apps | notifications toggle | notifications dnd | bar toggle power
+// Control from Hyprland binds:  qs ipc call launcher toggle | cheatsheet toggle | hyprsettings toggle | launcher clipboard | wallpapers toggle | dock toggle | dock apps | notifications toggle | notifications dnd | bar toggle power | session toggle
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -34,6 +34,7 @@ ShellRoot {
     QuickSettings {}
     Overview {}
     ScreenshotMenu {}
+    SessionMenu {}
     Cheatsheet {}
     HyprSettings {}
     Lock {}
@@ -75,6 +76,10 @@ ShellRoot {
         function screen(): void { Recorder.toggle(false) }
         function region(): void { Recorder.toggle(true) }
         function stop(): void { Recorder.stop() }
+    }
+    IpcHandler {
+        target: "session"
+        function toggle(): void { Ui.session = !Ui.session }
     }
     IpcHandler {
         target: "lock"
