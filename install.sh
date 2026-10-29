@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Hyprland dotfiles installer for Arch Linux.
-#   ./install.sh                 ask everything (defaults = the original setup)
+#   ./install.sh                 ask everything (no groups pre-ticked; app/look defaults = the original setup)
 #   ./install.sh -c my.conf      take answers from a preset file, ask only what it leaves out
-#   ./install.sh -y              accept defaults for anything not in the preset (no questions)
+#   ./install.sh -y              accept defaults for anything not in the preset (no questions;
+#                                groups: none, plus nvidia if an NVIDIA GPU is found)
 #   ./install.sh -d              dotfiles only: re-apply config + choices, skip packages/services
 # Your answers are saved to last-install.conf, so `./install.sh -c last-install.conf -y` repeats a run.
 set -euo pipefail
@@ -16,7 +17,7 @@ while getopts "c:ydh" o; do
         c) PRESET=$OPTARG ;;
         y) YES=1 ;;
         d) ONLY_DOTS=1 ;;
-        *) sed -n '2,7p' "$0"; exit 0 ;;
+        *) sed -n '2,8p' "$0"; exit 0 ;;
     esac
 done
 [[ -n $PRESET ]] && source "$PRESET"
@@ -44,7 +45,7 @@ ask() {
     if (( YES )); then printf -v "$var" '%s' "$def"; return; fi
     local a
     if (( $# )); then a=$(gum choose --header "$q" --selected "$def" "$@")
-    else a=$(gum input --header "$q" --value "$def"); fi
+    else a=$(gum input --header "$q" --value "$def"); printf -v "$var" '%s' "$a"; return; fi
     printf -v "$var" '%s' "${a:-$def}"
 }
 has() { [[ " $1 " == *" $2 "* ]]; }
@@ -81,15 +82,16 @@ nv_addr=$(grep -i nvidia <<<"$gpus" | head -1 | cut -d' ' -f1 || true)
 ig_line=$(grep -vi nvidia <<<"$gpus" | head -1 || true)
 ig_addr=${ig_line%% *}
 ig_name=igpu; grep -qi amd <<<"$ig_line" && ig_name=amd-igpu; grep -qi intel <<<"$ig_line" && ig_name=intel-igpu
-def_groups="fonts kde-apps shell"
-[[ -n $nv_addr ]] && def_groups+=" nvidia"
+def_groups=""                                   # nothing pre-ticked in the menu
+[[ -n $nv_addr ]] && yes_groups="nvidia" || yes_groups=""   # -y without a preset still gets GPU drivers
 def_hybrid=no; [[ -n $nv_addr && -n $ig_addr ]] && def_hybrid=yes
 
 # ── questions ──────────────────────────────────────────────────────────────────
 say "What to install"
-info "core (always): $(pkgs core | wc -l) packages — Hyprland, Quickshell, matugen, portals, audio, network, Bluetooth"
+info "core (always): $(pkgs core | wc -l) packages — Hyprland, Quickshell, matugen, portals, audio, network, Bluetooth, fonts"
+[[ -n $nv_addr ]] && info "NVIDIA GPU detected — tick the nvidia group to get the drivers"
 if [[ -z ${PKG_GROUPS:-} ]]; then
-    if (( YES )); then PKG_GROUPS=$def_groups
+    if (( YES )); then PKG_GROUPS=$yes_groups
     else
         labels=(); selected=()
         for g in "${GROUP_LIST[@]}"; do
@@ -97,7 +99,7 @@ if [[ -z ${PKG_GROUPS:-} ]]; then
             has "$def_groups" "$g" && selected+=("$(label "$g")")
         done
         sel_csv=$(IFS=,; echo "${selected[*]}")
-        PKG_GROUPS=$(gum choose --no-limit --height 12 --header "Package groups (space = toggle, enter = next; you pick apps inside each group next)" \
+        PKG_GROUPS=$(gum choose --no-limit --height 12 --header "Package groups — x = tick/untick, ctrl+a = all, enter = next (you pick apps inside each group next)" \
                         --selected "$sel_csv" "${labels[@]}" | awk '{print $1}' | tr '\n' ' ')
     fi
 fi
@@ -110,7 +112,7 @@ for g in ${PKG_GROUPS}; do
     [[ -n ${!var:-} ]] && continue
     if (( YES )); then printf -v "$var" '%s' "$(pkgs "$g" | tr '\n' ' ')"; continue; fi
     printf -v "$var" '%s' "$(items "$g" | gum choose --no-limit --height 20 --selected '*' \
-        --header "$(label "$g" | sed 's/  ·.*//') — untick what you don't want" | awk '{print $1}' | tr '\n' ' ')"
+        --header "$(label "$g" | sed 's/  ·.*//') — all ticked; x = untick, enter = next" | awk '{print $1}' | tr '\n' ' ')"
 done
 
 say "Default apps"
@@ -130,6 +132,11 @@ ask GAPS_IN    "Gap between windows (px)" 5
 ask GAPS_OUT   "Gap to screen edge (px)" 20
 ask BORDER     "Border width (px)" 2
 ask ROUNDING   "Corner rounding (px)" 10
+# numbers only, otherwise fall back to the default
+for v in GAPS_IN:5 GAPS_OUT:20 BORDER:2 ROUNDING:10; do
+    n=${v%%:*}; [[ ${!n} =~ ^[0-9]+$ ]] || printf -v "$n" '%s' "${v#*:}"
+done
+[[ -n $KB_LAYOUT ]] || KB_LAYOUT=us
 
 say "System"
 [[ $def_hybrid == yes ]] && info "Hybrid graphics found: NVIDIA $nv_addr + $ig_name $ig_addr"

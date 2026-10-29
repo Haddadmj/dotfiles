@@ -5,4 +5,4 @@ lib32-nvidia-utils           # 32-bit games/Steam
 nvidia-settings              # control panel
 nvidia-prime                 # prime-run for hybrid laptops
 libva-nvidia-driver          # hardware video decode
-linux-headers                # needed for the driver on the linux kernel
+linux-headers                # kernel headers, only needed if you add DKMS modules

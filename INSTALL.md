@@ -26,7 +26,7 @@ Only the options that matter for this setup are listed; everything else is up to
 | **Authentication → User account** | create your user, **Superuser (sudo): yes** | the installer runs as this user with sudo |
 | **Profile** | **Minimal** | `install.sh` installs Hyprland, drivers and apps itself. Don't pick the Hyprland/KDE desktop profile, it pulls in a different set of apps |
 | **Audio** | **Pipewire** | |
-| Kernels | **linux** | the NVIDIA group installs `linux-headers` for this kernel |
+| Kernels | **linux** | `nvidia-open` is built for the stock `linux` kernel |
 | **Network configuration** | **Use NetworkManager** | otherwise there's no network after the reboot |
 | **Optional repositories** | **multilib** | needed for NVIDIA 32-bit libs and gaming (the installer can also enable it later) |
 | Additional packages | `git` | optional; the installer installs it too |
@@ -80,14 +80,16 @@ bash <(curl -fsSL https://raw.githubusercontent.com/Haddadmj/dotfiles/main/setup
 This clones the repo to `~/dotfiles` and starts `install.sh`:
 
 1. Enter your sudo password — **only once**; it stays unlocked until the installer finishes. It installs `git`, `base-devel` and `gum`, then builds `paru`.
-2. Answer the menus. Arrow keys to move, **space** to tick, **enter** to confirm. After the groups,
-   each group opens a list of its apps (all ticked) — untick what you don't want.
-   Defaults match the original setup; for a desktop like the original, keep
-   `fonts nvidia kde-apps shell` (add `apps`/`gaming`/`dev`/`virt` if you want them).
+2. Answer the menus. Arrow keys to move, **x** to tick/untick, **ctrl+a** to tick all, **enter** to confirm.
+   No groups are ticked at first — core (Hyprland, the shell, fonts, audio, network) is always installed.
+   For a desktop like the original, tick `fonts kde-apps shell`, plus `nvidia` on an NVIDIA machine
+   (the installer says so when it finds one), and `apps`/`gaming`/`dev`/`virt` if you want them.
+   Each ticked group then opens a list of its apps, all ticked — untick what you don't want.
+   The other questions default to the original setup; just press enter to keep them.
 3. Check the settings summary and package list, then confirm.
 4. AUR builds take a while; no more password prompts after the first one.
 
-**Just Hyprland, no Plasma:** keep the defaults `sddm` or `ly` for the login screen and `qt6ct-kde` for Qt theming.
+**Just Hyprland, no Plasma:** keep the default `sddm` (or pick `ly`) for the login screen and the default `qt6ct-kde` for Qt theming.
 `plasma-login-manager` and `plasma-integration` both pull in Plasma.
 
 Re-running is safe: installed packages are skipped and replaced files are backed up to `~/.dotfiles-backup/`.
@@ -115,5 +117,5 @@ reboot
 | Black screen / Hyprland won't start on NVIDIA | Switch to a TTY (`CTRL+ALT+F2`), check `~/.local/share/hyprland/hyprland.log`. On a non-hybrid machine, make sure the `AQ_DRM_DEVICES` line in `~/.config/hypr/modules/env.lua` is commented out. |
 | A package failed to install | The installer prints which ones. Run `paru -S <name>` by hand, or remove it from `packages/*.txt`. |
 | Want different choices later | `~/dotfiles/install.sh -d` re-applies config and choices without touching packages. |
-| No icons in the bar | Install the **fonts** group (Nerd Fonts). |
+| No icons in the bar | The bar needs `ttf-jetbrains-mono-nerd` (core). Check with `fc-list \| grep -i jetbrains`; if missing, `sudo pacman -S ttf-jetbrains-mono-nerd`. |
 | Plasma got installed (older installer) | `sudo pacman -Rns plasma-login-manager xdg-desktop-portal-kde plasma-integration plasma-workspace`, then re-run `install.sh` and pick `sddm`/`ly` + `qt6ct-kde`. |

@@ -14,11 +14,8 @@ xdg-desktop-portal-gtk       # file pickers (no Plasma needed)
 xdg-user-dirs                # Pictures/Videos/… folders
 qt5-wayland                  # Qt5 apps on Wayland
 qt6-wayland                  # Qt6 apps on Wayland
-breeze                       # Qt widget style
+breeze                       # Qt widget style, Breeze icons and cursor
 breeze-gtk                   # GTK theme
-kde-gtk-config               # applies the theme to GTK apps
-whitesur-icon-theme          # icons (AUR)
-whitesur-cursor-theme-git    # cursor (AUR)
 pipewire                     # audio
 pipewire-alsa                # audio: ALSA apps
 pipewire-pulse               # audio: PulseAudio apps
@@ -30,7 +27,7 @@ network-manager-applet       # network tray icon
 bluez                        # Bluetooth
 bluez-utils                  # Bluetooth CLI
 polkit-kde-agent             # admin password prompts
-kwallet-pam                  # unlock the keyring at login
+kwallet-pam                  # unlock KWallet at login (works with sddm / plasma-login-manager)
 cliphist                     # clipboard history
 wl-clipboard                 # clipboard CLI
 wofi                         # fallback wallpaper picker
@@ -42,3 +39,8 @@ jq                           # JSON in scripts
 rsync                        # used by the installer/snapshot
 headsetcontrol               # headset battery in the bar
 btop                         # system monitor
+ttf-jetbrains-mono-nerd      # main UI/terminal font (Nerd Font)
+ttf-nerd-fonts-symbols       # icon glyphs
+otf-font-awesome             # extra icons
+noto-fonts                   # general text
+noto-fonts-emoji             # emoji

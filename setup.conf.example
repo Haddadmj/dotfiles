@@ -8,7 +8,7 @@ FILE_MANAGER="dolphin"          # dolphin nautilus thunar nemo
 EDITOR_APP="code"               # code kate zed gnome-text-editor
 MAIN_MOD="SUPER"                # SUPER ALT
 KB_LAYOUT="us,ara"
-KB_OPTIONS="grp:caps_toggle"
+KB_OPTIONS="grp:caps_toggle"   # empty = no layout-switch key
 THEME_MODE="dark"               # dark light
 GAPS_IN="5"
 GAPS_OUT="20"

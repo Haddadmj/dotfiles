@@ -60,7 +60,7 @@ hyprctl hyprpaper wallpaper ",$wall,cover" >/dev/null || true
 matugen -q -c "$HYPR/matugen/config.toml" -m "$mode" --prefer saturation image "$wall"
 
 # 3. reload everything that uses them
-hyprctl reload >/dev/null
+hyprctl reload >/dev/null || true
 pkill -SIGUSR2 waybar || true          # waybar reloads its style (quickshell watches colors.json itself)
 pkill -SIGUSR1 kitty  || true          # kitty reloads its config
 pkill -SIGUSR2 ghostty || true         # ghostty reloads its config
@@ -87,7 +87,7 @@ else
 fi
 
 # GTK apps
-gsettings set org.gnome.desktop.interface color-scheme "prefer-$mode"
-gsettings set org.gnome.desktop.interface gtk-theme "$([[ $mode == dark ]] && echo Breeze-Dark || echo Breeze)"
+gsettings set org.gnome.desktop.interface color-scheme "prefer-$mode" || true
+gsettings set org.gnome.desktop.interface gtk-theme "$([[ $mode == dark ]] && echo Breeze-Dark || echo Breeze)" || true
 
 notify-send -i "$wall" "Theme updated" "$(basename "$wall") · $mode" || true
