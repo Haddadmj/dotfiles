@@ -18,6 +18,7 @@
     { "type": "kernel",   "key": " Kernel  " },
     { "type": "host",     "key": "󰌢 Host    " },
     { "type": "uptime",   "key": "󰅐 Uptime  " },
+    { "type": "command",  "key": "󰃭 OS Age  ", "text": "b=$(stat -c %W /); echo \"$(( ($(date +%s) - b) / 86400 )) days (since $(date -d @$b +%F))\"" },
     { "type": "packages", "key": "󰏖 Packages" },
     { "type": "shell",    "key": " Shell   " },
     "break",
