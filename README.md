@@ -30,6 +30,7 @@ Everything below is installed by `install.sh` — this list is so you know what 
 |---|---|
 | `git`, `base-devel` | clone this repo, build AUR packages |
 | `gum` | the installer's menus |
+| `pciutils` | `lspci`, to detect NVIDIA / integrated GPUs |
 | `paru-bin` **(AUR)** | AUR helper; built from the AUR if missing |
 | `[multilib]` repo | enabled if you say yes — needed for `lib32-*` (NVIDIA, gaming) |
 

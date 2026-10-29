@@ -48,7 +48,7 @@ pkgs() { grep -hvE '^\s*#' "${@/#/$DOT/packages/}" | tr -s ' \n' '\n' | grep -v 
 
 # ── bootstrap: gum (menus) + paru (AUR) ─────────────────────────────────────────
 if (( ONLY_DOTS )); then command -v gum >/dev/null || sudo pacman -S --needed --noconfirm gum
-else sudo pacman -S --needed --noconfirm git base-devel gum; fi
+else sudo pacman -S --needed --noconfirm git base-devel gum pciutils; fi
 if (( ! ONLY_DOTS )) && ! command -v paru >/dev/null; then
     echo "==> Installing paru (AUR helper)"
     tmp=$(mktemp -d)
