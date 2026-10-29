@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Effects
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Hyprland
@@ -12,6 +13,7 @@ import qs.components
 // Grid of thumbnails from ~/Pictures/Wallpapers; picking one runs `theme.sh set <file>`,
 // which also regenerates the colors. Thumbnails are shared with theme.sh's wofi fallback.
 // Type to search · arrows move · Tab cycles folder · Space / right-click full preview · Ctrl+D light/dark
+// · Ctrl+H show/hide sketchy + nsfw (blurred again every time the picker opens)
 // · Enter or click apply · Esc or click outside close.
 PanelWindow {
     id: root
@@ -26,6 +28,8 @@ PanelWindow {
     property string mode: "dark"  // theme-state line 2
     property string folder: ""    // "" = all
     property bool previewing: false
+    property bool reveal: false
+    function hidden(w) { return !reveal && (w?.folder === "sketchy" || w?.folder === "nsfw") }
     readonly property var folders: [""].concat([...new Set(walls.map(w => w.folder))].filter(f => f).sort())
 
     screen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? Quickshell.screens[0]
@@ -42,6 +46,7 @@ PanelWindow {
             hideTimer.stop()
             search.text = ""
             previewing = false
+            reveal = false
             scan.running = true
             visible = true
             search.forceActiveFocus()
@@ -177,6 +182,7 @@ PanelWindow {
                                 else if (e.key === Qt.Key_Up) grid.moveCurrentIndexUp()
                                 else if (e.key === Qt.Key_Down) grid.moveCurrentIndexDown()
                                 else if (e.key === Qt.Key_D && (e.modifiers & Qt.ControlModifier)) root.toggleMode()
+                                else if (e.key === Qt.Key_H && (e.modifiers & Qt.ControlModifier)) root.reveal = !root.reveal
                                 else if (e.key === Qt.Key_Tab) root.cycleFolder(1)
                                 else if (e.key === Qt.Key_Backtab) root.cycleFolder(-1)
                                 else return
@@ -237,6 +243,23 @@ PanelWindow {
                         onClicked: { root.toggleMode(); search.forceActiveFocus() }
                     }
                 }
+
+                // show / hide sketchy + nsfw
+                Rectangle {
+                    implicitWidth: 38
+                    implicitHeight: 38
+                    radius: Theme.radius
+                    color: rm.containsMouse || root.reveal ? Theme.alpha(Theme.error, 0.9) : Theme.alpha(Theme.secondary, 0.4)
+                    Behavior on color { ColorAnimation { duration: 150 } }
+                    T { anchors.centerIn: parent; text: root.reveal ? Icons.eye : Icons.eyeOff; font.pixelSize: 15; color: rm.containsMouse || root.reveal ? Theme.errorText : Theme.fg }
+                    MouseArea {
+                        id: rm
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: { root.reveal = !root.reveal; search.forceActiveFocus() }
+                    }
+                }
             }
 
             GridView {
@@ -284,6 +307,14 @@ PanelWindow {
                                     asynchronous: true
                                     scale: cell.current ? 1.04 : 1
                                     Behavior on scale { NumberAnimation { duration: 150 } }
+                                    layer.enabled: root.hidden(cell.modelData)
+                                    layer.effect: MultiEffect { blurEnabled: true; blur: 1; blurMax: 64; brightness: -0.1 }
+                                }
+                                T {
+                                    visible: root.hidden(cell.modelData)
+                                    anchors.centerIn: parent
+                                    text: `${Icons.eyeOff}  ${cell.modelData.folder}`
+                                    color: Theme.fg
                                 }
                             }
 
@@ -311,7 +342,7 @@ PanelWindow {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onEntered: grid.currentIndex = cell.index
+                        onEntered: if (!root.previewing) grid.currentIndex = cell.index   // preview covers the grid; hover must not change it
                         acceptedButtons: Qt.LeftButton | Qt.RightButton
                         onClicked: e => {
                             if (e.button === Qt.RightButton) root.previewing = true
@@ -331,7 +362,7 @@ PanelWindow {
             T {
                 Layout.fillWidth: true
                 horizontalAlignment: Text.AlignHCenter
-                text: "Enter / click apply · Space / right-click preview · Tab folder · Ctrl+D light/dark · Esc close"
+                text: "Enter / click apply · Space / right-click preview · Tab folder · Ctrl+D light/dark · Ctrl+H show sketchy/nsfw · Esc close"
                 color: Theme.alpha(Theme.fg, 0.4)
                 font.pixelSize: 11
                 font.weight: Font.Normal
@@ -356,6 +387,8 @@ PanelWindow {
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
                 sourceSize: Qt.size(width, height)
+                layer.enabled: root.hidden(preview.w)
+                layer.effect: MultiEffect { blurEnabled: true; blur: 1; blurMax: 64; brightness: -0.1 }
             }
             Rectangle {
                 anchors.bottom: parent.bottom
@@ -368,7 +401,7 @@ PanelWindow {
                 T {
                     id: label
                     anchors.centerIn: parent
-                    text: `${preview.w?.name ?? ""}   ·   Enter apply · ←→ next · Space back`
+                    text: `${preview.w?.name ?? ""}   ·   Enter apply · ←→ next${root.hidden(preview.w) ? " · Ctrl+H unblur" : ""} · Space back`
                 }
             }
             MouseArea {

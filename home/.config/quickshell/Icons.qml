@@ -81,6 +81,7 @@ Singleton {
     readonly property string overview: "\u{f056e}"
     readonly property string lockOpen: "\u{f033f}"
     readonly property string eye: "\u{f0208}"
+    readonly property string eyeOff: "\u{f0209}"
     readonly property string refresh: "\u{f0450}"
     readonly property string wifiOff: "\u{f092e}"
     readonly property string settings: "\u{f0493}"
