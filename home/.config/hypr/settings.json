@@ -4,7 +4,8 @@
   "remap": {
     "Tools|Clipboard history": "SUPER + SHIFT + V",
     "Apps|Editor": "SUPER + C",
-    "Apps|Launcher": "SUPER + SPACE"
+    "Apps|Launcher": "ALT + SPACE",
+    "Apps|Vicinae": "SUPER + SPACE"
   },
   "disabledBinds": [],
   "env": {},

@@ -28,7 +28,7 @@ hl.window_rule({
     float = true,
 })
 
--- Workspace per app (icons match the bar: 1 shell · 2 web · 3 code · 4 chat · 5 cinema · 6 games · 7 obs)
+-- Workspace per app (icons match the bar: 1 shell · 2 web · 3 code · 4 chat · 5 cinema · 6 games · 7 obs · 8 music)
 hl.window_rule({
     name      = "ws1-terminal",
     match     = { class = "^(com\\.mitchellh\\.ghostty)$" },
@@ -64,6 +64,11 @@ hl.window_rule({
     name      = "ws7-obs",
     match     = { class = "^(com\\.obsproject\\.Studio|obs)$" },
     workspace = "7",
+})
+hl.window_rule({
+    name      = "ws8-music",
+    match     = { class = "^(com\\.github\\.th-ch\\.youtube-music|YouTube Music)$" },
+    workspace = "8",
 })
 
 -- Blur behind the Quickshell bar, popups, launcher and notifications (translucent backgrounds)

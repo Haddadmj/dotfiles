@@ -130,6 +130,7 @@ paru
 paru-debug
 pavucontrol
 pcsx2-latest-bin
+pear-desktop-bin
 phonon-qt6-vlc
 piper
 pipewire

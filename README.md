@@ -83,7 +83,7 @@ Everything below is installed by `install.sh` — this list is so you know what 
 | **nvidia** | `nvidia-open` `nvidia-utils` `lib32-nvidia-utils` `nvidia-settings` `nvidia-prime` `libva-nvidia-driver` `linux-headers` — *tick it on NVIDIA machines; the installer tells you when it finds one* |
 | **kde-apps** | `dolphin` `dolphin-plugins` `ark` `kate` `okular` `gwenview` `spectacle` `kcalc` `kfind` `ffmpegthumbs` `kdegraphics-thumbnailers` `kio-admin` `partitionmanager` `kwalletmanager` |
 | **shell** | `zsh` `fzf` `zoxide` `eza` `bat` `fd` `dust` `duf` `fastfetch` `git-delta` `tldr` `micro` `pkgfile` + oh-my-zsh, powerlevel10k, fzf-tab, zsh-autosuggestions, zsh-syntax-highlighting, zsh-completions, you-should-use (git clones) |
-| **apps** | `obsidian` `mpv` `solaar` `piper`, **(AUR)** `vesktop-bin` `code-features` `code-marketplace` `input-remapper-git` `t3code-nightly-bin` `nuviodesktop-bin` `vicinae-bin` `obs-studio-tytan652` `obs-pipewire-audio-capture` |
+| **apps** | `obsidian` `mpv` `solaar` `piper`, **(AUR)** `vesktop-bin` `code-features` `code-marketplace` `input-remapper-git` `t3code-nightly-bin` `nuviodesktop-bin` `pear-desktop-bin` `vicinae-bin` `obs-studio-tytan652` `obs-pipewire-audio-capture` |
 | **gaming** | `gamemode` `lib32-gamemode` `lib32-pipewire` `lib32-vulkan-icd-loader` `retroarch` + assets/cores `dolphin-emu` `prismlauncher` `kde-games-meta`, **(AUR)** `pcsx2-latest-bin` `rpcs3-bin` |
 | **dev** | `cmake` `ninja` `extra-cmake-modules` `jdk17-openjdk` `uv` `scdoc` `blender` `kdenlive` `kdevelop` |
 | **virt** | `qemu-desktop` `libvirt` `virt-manager` `edk2-ovmf` `swtpm` `dnsmasq` |
