@@ -211,6 +211,16 @@ PanelWindow {
         Behavior on opacity { NumberAnimation { duration: Theme.anim; easing.type: Easing.OutCubic } }
         Behavior on scale { NumberAnimation { duration: Theme.anim; easing.type: Easing.OutCubic } }
         Keys.onEscapePressed: Ui.hyprSettings = false
+        // Ctrl+Tab / Ctrl+PgDn next tab, Ctrl+Shift+Tab / Ctrl+PgUp previous
+        Keys.onPressed: e => {
+            if (!(e.modifiers & Qt.ControlModifier)) return
+            const tabs = ["look", "binds", "autostart", "env"]
+            const d = e.key === Qt.Key_Tab || e.key === Qt.Key_PageDown ? 1 : e.key === Qt.Key_Backtab || e.key === Qt.Key_PageUp ? -1 : 0
+            if (!d) return
+            Ui.hyprSettingsTab = tabs[(tabs.indexOf(Ui.hyprSettingsTab) + d + tabs.length) % tabs.length]
+            box.forceActiveFocus()
+            e.accepted = true
+        }
         MouseArea { anchors.fill: parent; onClicked: box.forceActiveFocus() }
 
         ColumnLayout {
@@ -243,6 +253,17 @@ PanelWindow {
                 boundsBehavior: Flickable.StopAtBounds
                 clip: true
                 WheelScroll { view: flick }
+
+                // keep the keyboard-focused control in view
+                readonly property Item focused: Window.activeFocusItem
+                onFocusedChanged: {
+                    let it = focused
+                    while (it && it !== page) it = it.parent
+                    if (!it) return
+                    const y = focused.mapToItem(page, 0, 0).y
+                    if (y < contentY) contentY = Math.max(0, y - 12)
+                    else if (y + focused.height > contentY + height) contentY = Math.min(contentHeight - height, y + focused.height - height + 12)
+                }
 
                 ColumnLayout {
                     id: page

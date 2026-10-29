@@ -15,6 +15,10 @@ PopupWindow {
     property bool above: false        // open upwards (dock) instead of below the bar
     default property alias content: body.data
     readonly property bool open: Ui.popup === name
+    // opened from bar/dock keyboard mode: take a real xdg grab so keys reach the popup
+    // (mouse-opened popups keep HyprlandFocusGrab, so clicking the island still closes them)
+    property bool keyGrab: false
+    grabFocus: keyGrab
 
     anchor.item: target
     anchor.rect.x: (target.width - width) * align
@@ -25,13 +29,14 @@ PopupWindow {
     visible: false
 
     onOpenChanged: {
-        if (open) { hideTimer.stop(); visible = true }
+        if (open) { hideTimer.stop(); keyGrab = Ui.barKeys || Ui.dockKeys; visible = true; panel.forceActiveFocus() }
         else hideTimer.restart()
     }
+    onVisibleChanged: if (!visible && open) Ui.popup = ""   // grab dismissed by the compositor
     Timer { id: hideTimer; interval: Theme.anim; onTriggered: root.visible = false }
 
     HyprlandFocusGrab {
-        active: root.open
+        active: root.open && !root.keyGrab
         windows: [root, root.target.QsWindow.window]
         onCleared: if (Ui.popup === root.name) Ui.popup = ""
     }
@@ -49,6 +54,8 @@ PopupWindow {
 
         focus: root.open
         Keys.onEscapePressed: Ui.popup = ""
+        Keys.onDownPressed: nextItemInFocusChain(true).forceActiveFocus()
+        Keys.onUpPressed: nextItemInFocusChain(false).forceActiveFocus()
 
         ColumnLayout {
             id: body

@@ -11,7 +11,7 @@ import qs.components
 // Launcher dropping down from the launcher island, with three tabs:
 //   Apps       SUPER+R / launcher island. Apps you launch often float to the top. Also:
 //              math ("2*pi", "=5 usd to eur") via qalc · web search ("!g …", "!yt …", "!w …", "!gh …", "!aw …")
-//              · shell commands (lock, reboot, overview, screenshot…) · right-click an app to pin it to the dock
+//              · shell commands (lock, reboot, overview, screenshot…) · right-click an app (or Ctrl+P) to pin it to the dock
 //   Clipboard  SUPER+C. cliphist history; Enter copies, Shift+Delete removes the entry.
 //   Emoji      SUPER+period. Enter copies the emoji.
 // Type to search · ↑↓ to move · Tab or Ctrl+Tab switches tab · Enter · Esc or click outside to close.
@@ -350,6 +350,10 @@ PanelWindow {
                             else if (e.key === Qt.Key_Down) list.incrementCurrentIndex()
                             else if (e.key === Qt.Key_Tab) switchTab(1)
                             else if (e.key === Qt.Key_Backtab) switchTab(-1)
+                            else if (e.key === Qt.Key_P && (e.modifiers & Qt.ControlModifier)) {
+                                const app = root.results[list.currentIndex]?.app
+                                if (app) Dock.togglePin(app.id)
+                            }
                             else if (e.key === Qt.Key_Delete && (e.modifiers & Qt.ShiftModifier) && root.clip) {
                                 const item = root.results[list.currentIndex]
                                 if (item) root.remove(item.clip)
@@ -481,7 +485,7 @@ PanelWindow {
                 horizontalAlignment: Text.AlignHCenter
                 text: root.clip ? "Enter copy · Shift+Del / middle-click remove · Tab emoji"
                     : root.emoji ? "Enter copy · Tab apps"
-                    : "Enter launch · right-click pin to dock · =2+2 math · !g !w web · Tab clipboard"
+                    : "Enter launch · Ctrl+P / right-click pin to dock · =2+2 math · !g !w web · Tab clipboard"
                 color: Theme.alpha(Theme.fg, 0.4)
                 font.pixelSize: 11
                 font.weight: Font.Normal

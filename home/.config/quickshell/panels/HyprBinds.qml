@@ -149,6 +149,11 @@ ColumnLayout {
                     cursorShape: Qt.PointingHandCursor
                     onClicked: { root.error = ""; root.editing = row.modelData.desc; field.text = row.modelData.keys; field.takeFocus() }
                 }
+                KeyFocus {
+                    anchors.margins: -3
+                    enabled: !row.modelData.fixed && row.modelData.on
+                    onActivated: { root.error = ""; root.editing = row.modelData.desc; field.text = row.modelData.keys; field.takeFocus() }
+                }
             }
             Dot { modified: row.remapped; onReset: root.panel.update(c => { delete c.remap[row.modelData.desc] }, true) }
         }

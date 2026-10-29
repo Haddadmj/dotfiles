@@ -71,6 +71,7 @@ Island {
                 cursorShape: Qt.PointingHandCursor
                 onClicked: root.goTo(btn.modelData)
             }
+            KeyFocus { onActivated: root.goTo(btn.modelData) }
         }
     }
 

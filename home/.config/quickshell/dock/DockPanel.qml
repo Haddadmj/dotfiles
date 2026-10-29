@@ -52,7 +52,8 @@ PanelWindow {
         })
     }
     readonly property bool autoShown: Dock.hideMode === "never" || (Dock.hideMode === "dodge" && !covered)
-    readonly property bool shown: popupOpen || dragId !== "" || hoverHold || trashDrop.containsDrag
+    readonly property bool keys: Ui.dockKeys && Hyprland.focusedMonitor === monitor
+    readonly property bool shown: keys || popupOpen || dragId !== "" || hoverHold || trashDrop.containsDrag
         || Dock.override === "show" || (Dock.override === "" && autoShown)
 
     // floating windows can be dragged without any Hyprland event, so poll while there are some
@@ -86,6 +87,8 @@ PanelWindow {
 
     WlrLayershell.namespace: "quickshell:dock"
     WlrLayershell.layer: WlrLayer.Top
+    WlrLayershell.keyboardFocus: keys ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    onKeysChanged: if (keys) slide.nextItemInFocusChain(true).forceActiveFocus()
     anchors { bottom: true; left: true; right: true }
     implicitHeight: dockH + margin + (maxSize - base) + 44   // room for magnified icons and name bubbles
     exclusionMode: ExclusionMode.Ignore              // float over windows instead of shrinking them
@@ -181,7 +184,7 @@ PanelWindow {
         showDirs: true
         showDotAndDotDot: false
     }
-    function openTrash() { Quickshell.execDetached(["sh", "-c", "dolphin trash:/ || gio open trash:///"]) }
+    function openTrash() { Ui.dockKeys = false; Quickshell.execDetached(["sh", "-c", "dolphin trash:/ || gio open trash:///"]) }
 
     // ── menu ─────────────────────────────────────────
     property string menuKind: ""        // app · trash · apps · dock
@@ -205,6 +208,7 @@ PanelWindow {
         }
 
         HoverHandler { id: hover }
+        Keys.onEscapePressed: Ui.dockKeys = false
 
         // a file dragged to the screen edge reveals the dock so it can be dropped on the Trash
         DropArea {

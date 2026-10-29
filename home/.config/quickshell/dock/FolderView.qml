@@ -64,6 +64,7 @@ ColumnLayout {
             color: am.containsMouse ? Theme.alpha(Theme.primary, 0.25) : Theme.alpha(Theme.secondary, 0.6)
             T { anchors.centerIn: parent; text: Icons.plus; color: Theme.primary; font.pixelSize: 15 }
             MouseArea { id: am; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.pageRequested("add") }
+            KeyFocus { onActivated: root.pageRequested("add") }
         }
     }
 
@@ -119,6 +120,16 @@ ColumnLayout {
                         radius: 2
                         color: tile.modelData.windows.some(t => t.activated) ? Theme.primary : Theme.fgDim
                         opacity: tile.modelData.windows.length ? 1 : 0
+                    }
+                }
+
+                KeyFocus {
+                    anchors.margins: 3
+                    radius: Theme.radius
+                    onActivated: { Ui.popup = ""; Dock.activate(tile.modelData) }
+                    Keys.onPressed: e => {
+                        if (e.key === Qt.Key_Menu || (e.key === Qt.Key_F10 && (e.modifiers & Qt.ShiftModifier))) root.appMenu(tile.modelData)
+                        else e.accepted = false
                     }
                 }
 

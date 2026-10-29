@@ -38,4 +38,5 @@ Rectangle {
         cursorShape: Qt.PointingHandCursor
         onClicked: root.clicked()
     }
+    KeyFocus { onActivated: root.clicked() }
 }

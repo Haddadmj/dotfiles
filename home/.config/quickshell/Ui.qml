@@ -18,6 +18,12 @@ Singleton {
     property string hyprSettingsTab: "look"   // look, binds, autostart, env
     property bool locked: false
     property bool keepAwake: false     // idle inhibitor, held by the bar
+    property bool barKeys: false       // bar has keyboard focus (SUPER+ALT+B)
+    property bool dockKeys: false      // dock has keyboard focus (SUPER+ALT+D)
+    readonly property bool panelOpen: launcher || notifCenter || wallpapers || quickSettings || overview || screenshot || cheatsheet || hyprSettings || session || locked
+    onPanelOpenChanged: if (panelOpen) { barKeys = false; dockKeys = false }   // hand the keyboard to the panel
+    onBarKeysChanged: if (barKeys) dockKeys = false
+    onDockKeysChanged: if (dockKeys) barKeys = false
 
     function toggle(name) { popup = popup === name ? "" : name }
     function toggleLauncher(mode) {

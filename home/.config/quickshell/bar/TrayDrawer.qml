@@ -11,7 +11,8 @@ Island {
     id: root
     padding: 10
     property int menusOpen: 0
-    readonly property bool open: hovered || menusOpen > 0
+    property int keyFocused: 0
+    readonly property bool open: hovered || menusOpen > 0 || keyFocused > 0
 
     // Some apps (Electron, Steam) send "name?path=/dir" instead of an icon name
     function iconSource(icon) {
@@ -63,6 +64,15 @@ Island {
                     }
                     onWheel: e => item.modelData.scroll(e.angleDelta.y, false)
 
+                    KeyFocus {
+                        id: trayKey
+                        anchors.margins: -4
+                        onActiveFocusChanged: root.keyFocused += activeFocus ? 1 : -1
+                        onActivated: item.modelData.onlyMenu ? (item.modelData.hasMenu && menu.open()) : item.modelData.activate()
+                        Keys.onMenuPressed: if (item.modelData.hasMenu) menu.open()
+                        Keys.onPressed: e => { if (e.key === Qt.Key_M && item.modelData.hasMenu) { menu.open(); e.accepted = true } }
+                    }
+
                     QsMenuAnchor {
                         id: menu
                         menu: item.modelData.menu
@@ -73,7 +83,7 @@ Island {
 
                     Tip {
                         target: item
-                        show: item.containsMouse && !menu.visible
+                        show: (item.containsMouse || trayKey.activeFocus) && !menu.visible
                         text: item.modelData.tooltipTitle || item.modelData.title || item.modelData.id
                     }
                 }

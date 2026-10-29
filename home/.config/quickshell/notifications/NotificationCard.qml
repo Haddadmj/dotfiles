@@ -64,6 +64,12 @@ Rectangle {
         }
     }
 
+    function activate() {
+        if (defaultAction) { defaultAction.invoke(); Ui.notifCenter = false }
+        else if (appWindow) focusApp()
+        else if (toast) Notifs.hidePopup(notif)
+    }
+
     MouseArea {
         id: mouse
         anchors.fill: parent
@@ -72,9 +78,18 @@ Rectangle {
         cursorShape: root.defaultAction || root.appWindow ? Qt.PointingHandCursor : Qt.ArrowCursor
         onClicked: e => {
             if (e.button === Qt.MiddleButton) root.notif?.dismiss()
-            else if (root.defaultAction) { root.defaultAction.invoke(); Ui.notifCenter = false }
-            else if (root.appWindow) root.focusApp()
-            else if (root.toast) Notifs.hidePopup(root.notif)
+            else root.activate()
+        }
+    }
+    KeyFocus {
+        onActivated: root.activate()
+        Keys.onDeletePressed: root.notif?.dismiss()
+        // keep the focused card scrolled into view in the notification center list
+        onActiveFocusChanged: {
+            const v = root.ListView.view
+            if (!activeFocus || !v) return
+            if (root.y < v.contentY) v.contentY = root.y
+            else if (root.y + root.height > v.contentY + v.height) v.contentY = root.y + root.height - v.height
         }
     }
 
@@ -190,6 +205,7 @@ Rectangle {
                             cursorShape: Qt.PointingHandCursor
                             onClicked: modelData.invoke()
                         }
+                        KeyFocus { onActivated: modelData.invoke() }
                     }
                 }
             }

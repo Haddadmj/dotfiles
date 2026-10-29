@@ -20,6 +20,7 @@ Island {
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         onClicked: Quickshell.execDetached(["nm-connection-editor"])
+        KeyFocus { id: netKey; onActivated: Quickshell.execDetached(["nm-connection-editor"]) }
 
         readonly property var devices: Networking.devices.values
         readonly property var device: devices.find(d => d.connected && d.type === DeviceType.Wifi)
@@ -81,7 +82,7 @@ Island {
 
         Tip {
             target: net
-            show: net.containsMouse
+            show: net.containsMouse || netKey.activeFocus
             text: !net.device ? "Offline"
                 : (net.wifi ? `<b>${net.network?.name ?? ""}</b>  ${Math.round(net.strength * 100)}%` : `<b>${net.device.name}</b>`)
                   + `<br>${net.ip}<br>${Icons.down} ${net.human(net.rxRate)}   ${Icons.up} ${net.human(net.txRate)}`
@@ -106,6 +107,7 @@ Island {
             if (e.button === Qt.RightButton) Quickshell.execDetached(["sh", "-c", "blueman-manager || blueberry || ghostty -e bluetuith"])
             else if (adapter) adapter.enabled = !adapter.enabled
         }
+        KeyFocus { id: btKey; onActivated: if (bt.adapter) bt.adapter.enabled = !bt.adapter.enabled }
 
         T {
             id: btIcon
@@ -119,7 +121,7 @@ Island {
 
         Tip {
             target: bt
-            show: bt.containsMouse
+            show: bt.containsMouse || btKey.activeFocus
             text: !bt.adapter ? "No Bluetooth adapter"
                 : !bt.on ? "Bluetooth off<br><font color='" + Theme.fgDim + "'>click: turn on</font>"
                 : bt.connected.length === 0 ? "Bluetooth on<br><font color='" + Theme.fgDim + "'>click: turn off · right: devices</font>"
@@ -143,6 +145,7 @@ Island {
 
         // works without sudo because the user is the tailscale operator (tailscale up --operator)
         onClicked: if (!toggleProc.running) toggleProc.running = true
+        KeyFocus { id: tsKey; onActivated: if (!toggleProc.running) toggleProc.running = true }
         Process {
             id: toggleProc
             command: ["tailscale", ts.on ? "down" : "up"]
@@ -181,7 +184,7 @@ Island {
 
         Tip {
             target: ts
-            show: ts.containsMouse
+            show: ts.containsMouse || tsKey.activeFocus
             text: !ts.state ? "Tailscale daemon not running"
                 : ts.state === "NeedsLogin" ? "Tailscale: logged out<br><font color='" + Theme.fgDim + "'>run: tailscale up</font>"
                 : !ts.on ? "Tailscale off<br><font color='" + Theme.fgDim + "'>click: connect</font>"
@@ -202,6 +205,7 @@ Island {
             if (e.button === Qt.RightButton) Notifs.dnd = !Notifs.dnd
             else Ui.notifCenter = !Ui.notifCenter
         }
+        KeyFocus { id: bellKey; onActivated: Ui.notifCenter = !Ui.notifCenter }
 
         T {
             id: bellIcon
@@ -220,7 +224,7 @@ Island {
 
         Tip {
             target: bell
-            show: bell.containsMouse
+            show: bell.containsMouse || bellKey.activeFocus
             text: (Notifs.count ? `${Notifs.count} notification${Notifs.count > 1 ? "s" : ""}` : "No notifications")
                   + (Notifs.dnd ? " · do not disturb" : "")
                   + `<br><font color='${Theme.fgDim}'>click: open · right: do not disturb</font>`

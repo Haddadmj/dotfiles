@@ -84,6 +84,7 @@ PanelWindow {
         Behavior on color { ColorAnimation { duration: 150 } }
 
         MouseArea { id: tm; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: tile.toggled() }
+        KeyFocus { onActivated: tile.toggled() }
 
         RowLayout {
             anchors.fill: parent
@@ -122,6 +123,7 @@ PanelWindow {
                     cursorShape: Qt.PointingHandCursor
                     onClicked: root.expanded = root.expanded === tile.list ? "" : tile.list
                 }
+                KeyFocus { enabled: tile.list !== ""; onActivated: root.expanded = root.expanded === tile.list ? "" : tile.list }
             }
         }
     }
@@ -137,6 +139,7 @@ PanelWindow {
         Behavior on color { ColorAnimation { duration: 150 } }
         T { anchors.centerIn: parent; text: rb.icon; font.pixelSize: 16; color: rm.containsMouse ? (rb.danger ? Theme.errorText : Theme.primaryText) : Theme.fg }
         MouseArea { id: rm; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: rb.clicked() }
+        KeyFocus { onActivated: rb.clicked() }
     }
 
     component Divider: Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: Theme.islandBorder }
@@ -160,6 +163,8 @@ PanelWindow {
         Behavior on height { NumberAnimation { duration: Theme.anim; easing.type: Easing.OutCubic } }
 
         Keys.onEscapePressed: Ui.quickSettings = false
+        Keys.onDownPressed: nextItemInFocusChain(true).forceActiveFocus()
+        Keys.onUpPressed: nextItemInFocusChain(false).forceActiveFocus()
         MouseArea { anchors.fill: parent }   // swallow clicks so they don't close
 
         ColumnLayout {
@@ -290,6 +295,7 @@ PanelWindow {
                     text: Icons.volumeIcon(root.sink?.audio?.volume ?? 0, root.sink?.audio?.muted ?? false)
                     color: root.sink?.audio?.muted ? Theme.alpha(Theme.fg, 0.45) : Theme.primary
                     MouseArea { anchors.fill: parent; anchors.margins: -4; cursorShape: Qt.PointingHandCursor; onClicked: if (root.sink?.audio) root.sink.audio.muted = !root.sink.audio.muted }
+                    KeyFocus { anchors.margins: -4; onActivated: if (root.sink?.audio) root.sink.audio.muted = !root.sink.audio.muted }
                 }
                 Slider {
                     Layout.fillWidth: true
@@ -303,6 +309,7 @@ PanelWindow {
                     text: root.expanded === "audio" ? Icons.chevronUp : Icons.chevronDown
                     font.pixelSize: 16
                     MouseArea { anchors.fill: parent; anchors.margins: -6; cursorShape: Qt.PointingHandCursor; onClicked: root.expanded = root.expanded === "audio" ? "" : "audio" }
+                    KeyFocus { anchors.margins: -4; onActivated: root.expanded = root.expanded === "audio" ? "" : "audio" }
                 }
             }
             RowLayout {
@@ -313,6 +320,7 @@ PanelWindow {
                     text: root.source?.audio?.muted ? Icons.micOff : Icons.mic
                     color: root.source?.audio?.muted ? Theme.alpha(Theme.fg, 0.45) : Theme.primary
                     MouseArea { anchors.fill: parent; anchors.margins: -4; cursorShape: Qt.PointingHandCursor; onClicked: if (root.source?.audio) root.source.audio.muted = !root.source.audio.muted }
+                    KeyFocus { anchors.margins: -4; onActivated: if (root.source?.audio) root.source.audio.muted = !root.source.audio.muted }
                 }
                 Slider {
                     Layout.fillWidth: true
@@ -348,6 +356,7 @@ PanelWindow {
                         text: modelData.icon
                         font.pixelSize: 17
                         MouseArea { anchors.fill: parent; anchors.margins: -4; cursorShape: Qt.PointingHandCursor; onClicked: parent.modelData.act() }
+                        KeyFocus { anchors.margins: -4; onActivated: parent.modelData.act() }
                     }
                 }
             }

@@ -87,6 +87,7 @@ Island {
                         cursorShape: Qt.PointingHandCursor
                         onClicked: if (sec.node?.audio) sec.node.audio.muted = !sec.node.audio.muted
                     }
+                    KeyFocus { onActivated: if (sec.node?.audio) sec.node.audio.muted = !sec.node.audio.muted }
                 }
                 Slider {
                     Layout.fillWidth: true
@@ -165,6 +166,7 @@ Island {
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: if (app.modelData.audio) app.modelData.audio.muted = !app.muted
                             }
+                            KeyFocus { onActivated: if (app.modelData.audio) app.modelData.audio.muted = !app.muted }
                         }
                         Slider {
                             Layout.fillWidth: true

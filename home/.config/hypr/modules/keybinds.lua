@@ -34,6 +34,8 @@ bind(mainMod .. " + CTRL + W",  hl.dsp.exec_cmd(scripts .. "/theme.sh toggle-mod
 
 -- Windows / session
 bind(mainMod .. " + Q", hl.dsp.window.close(), "Windows|Close window")
+bind(mainMod .. " + ALT + B", hl.dsp.exec_cmd("qs ipc call bar focus"), "Shell|Keyboard-navigate the bar")  -- ←/→ move · Enter open · Esc leave
+bind(mainMod .. " + ALT + D", hl.dsp.exec_cmd("qs ipc call dock focus"), "Shell|Keyboard-navigate the dock")  -- ←/→ move · Enter open · Menu menu · Esc leave
 bind(mainMod .. " + M", hl.dsp.exec_cmd("qs ipc call session toggle"), "Session|Power menu")  -- quickshell session menu
 bind(mainMod .. " + V", hl.dsp.window.float({ action = "toggle" }), "Windows|Toggle floating")
 bind(mainMod .. " + P", hl.dsp.window.pseudo(), "Windows|Pseudo-tile")

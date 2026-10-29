@@ -24,4 +24,5 @@ Rectangle {
         color: root.on ? Theme.primaryText : mouse.containsMouse && root.danger ? Theme.errorText : Theme.fg
     }
     MouseArea { id: mouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.clicked() }
+    KeyFocus { onActivated: root.clicked() }
 }

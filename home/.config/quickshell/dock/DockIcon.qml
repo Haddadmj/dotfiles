@@ -41,6 +41,16 @@ Item {
         Behavior on opacity { NumberAnimation { duration: 150 } }
         transform: Translate { id: shift }
 
+        KeyFocus {
+            id: keyFocus
+            radius: Theme.radius + 4
+            onActivated: root.clicked({ button: Qt.LeftButton })
+            Keys.onPressed: e => {
+                if (e.key === Qt.Key_Menu || (e.key === Qt.Key_F10 && (e.modifiers & Qt.ShiftModifier))) root.clicked({ button: Qt.RightButton })
+                else e.accepted = false
+            }
+        }
+
         Rectangle {
             anchors.fill: parent
             anchors.margins: -4
@@ -154,7 +164,7 @@ Item {
         color: Theme.popup
         border.width: 1
         border.color: Theme.alpha(Theme.primary, 0.4)
-        opacity: root.showLabel && root.hovered && !mouse.dragging && root.label !== "" && Ui.popup === "" ? 1 : 0
+        opacity: root.showLabel && (root.hovered || keyFocus.activeFocus) && !mouse.dragging && root.label !== "" && Ui.popup === "" ? 1 : 0
         visible: opacity > 0
         Behavior on opacity { NumberAnimation { duration: 120 } }
         T { id: name; anchors.centerIn: parent; text: root.label; font.pixelSize: Theme.fontSize - 1 }

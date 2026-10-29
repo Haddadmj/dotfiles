@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Hyprland
 import Quickshell.Wayland
 import qs
 
@@ -15,8 +16,16 @@ PanelWindow {
     margins { top: Theme.gap; left: 20; right: 20 }
     implicitHeight: Theme.barHeight
     color: "transparent"
+    readonly property bool keys: Ui.barKeys && modelData.name === Hyprland.focusedMonitor?.name
+    WlrLayershell.keyboardFocus: keys ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    onKeysChanged: if (keys) nav.nextItemInFocusChain(true).forceActiveFocus()
 
     IdleInhibitor { window: bar; enabled: Ui.keepAwake }
+
+    FocusScope {
+    id: nav
+    anchors.fill: parent
+    Keys.onEscapePressed: Ui.barKeys = false
 
     RowLayout {
         id: leftRow
@@ -51,5 +60,6 @@ PanelWindow {
         Clock {}
         QuickSettingsButton {}
         Power {}
+    }
     }
 }

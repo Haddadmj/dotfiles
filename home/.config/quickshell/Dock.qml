@@ -167,6 +167,7 @@ Singleton {
     Timer { id: launchTimeout; interval: 6000; onTriggered: root.launching = "" }
 
     function launch(id) {
+        Ui.dockKeys = false   // let the app take the keyboard
         const e = DesktopEntries.byId(id)
         if (!e) return
         if (e.runInTerminal) Quickshell.execDetached(["ghostty", "-e", ...e.command])
@@ -193,7 +194,7 @@ Singleton {
     }
 
     function addr(t) { const a = t.address; return a.startsWith("0x") ? a : "0x" + a }
-    function focusWindow(t) { Hyprland.dispatch(`hl.dsp.focus({ window = "address:${addr(t)}" })`) }
+    function focusWindow(t) { Ui.dockKeys = false; Hyprland.dispatch(`hl.dsp.focus({ window = "address:${addr(t)}" })`) }
     function closeWindow(t) { Hyprland.dispatch(`hl.dsp.window.close({ window = "address:${addr(t)}" })`) }
 
     // click: launch if closed, otherwise focus its window (cycling when it has several)

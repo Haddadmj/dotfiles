@@ -15,4 +15,5 @@ Rectangle {
         cursorShape: Qt.PointingHandCursor
         onClicked: root.reset()
     }
+    KeyFocus { enabled: root.modified; anchors.margins: -4; radius: 8; onActivated: root.reset() }
 }

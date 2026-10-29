@@ -64,6 +64,8 @@ ColumnLayout {
                     clip: true
                     Keys.onReturnPressed: if (root.apps.length) root.choose(root.apps[0])
                     Keys.onEnterPressed: if (root.apps.length) root.choose(root.apps[0])
+                    Keys.onDownPressed: { grid.currentIndex = 0; grid.forceActiveFocus() }
+                    Keys.onTabPressed: { grid.currentIndex = 0; grid.forceActiveFocus() }
                     T {
                         visible: !search.text
                         text: "Search…"
@@ -82,6 +84,7 @@ ColumnLayout {
             color: dm.containsMouse ? Theme.mix(Theme.primary, "#ffffff", 0.15) : Theme.primary
             T { id: doneText; anchors.centerIn: parent; text: "Done"; color: Theme.primaryText }
             MouseArea { id: dm; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.done() }
+            KeyFocus { onActivated: root.done() }
         }
     }
 
@@ -95,6 +98,17 @@ ColumnLayout {
         boundsBehavior: Flickable.StopAtBounds
         model: ScriptModel { values: root.apps }
         WheelScroll { view: grid }
+        // arrows move (GridView built-in) · Enter opens / picks · Menu, Shift+F10 or Ctrl+P pins · ↑ on the top row or Shift+Tab back to search
+        Keys.onPressed: e => {
+            const a = root.apps[currentIndex]
+            const pin = e.key === Qt.Key_Menu || (e.key === Qt.Key_F10 && (e.modifiers & Qt.ShiftModifier)) || (e.key === Qt.Key_P && (e.modifiers & Qt.ControlModifier))
+            if ((e.key === Qt.Key_Return || e.key === Qt.Key_Enter || e.key === Qt.Key_Space) && a) root.choose(a)
+            else if (pin && a && !root.folder) Dock.togglePin(a.id)
+            else if (e.key === Qt.Key_Tab) nextItemInFocusChain(true).forceActiveFocus()   // the Done button
+            else if (e.key === Qt.Key_Backtab || (e.key === Qt.Key_Up && currentIndex < root.columns)) search.forceActiveFocus()
+            else if (e.text && e.text.trim() && !e.modifiers) { search.forceActiveFocus(); search.text += e.text }
+            else e.accepted = false
+        }
 
         delegate: Item {
             id: tile
@@ -107,7 +121,9 @@ ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: 3
                 radius: Theme.radius
-                color: tm.containsMouse ? Theme.alpha(Theme.primary, 0.18) : "transparent"
+                color: tm.containsMouse || (tile.GridView.isCurrentItem && grid.activeFocus) ? Theme.alpha(Theme.primary, 0.18) : "transparent"
+                border.width: tile.GridView.isCurrentItem && grid.activeFocus ? 2 : 0
+                border.color: Theme.fg
                 Behavior on color { ColorAnimation { duration: 120 } }
             }
 
@@ -181,7 +197,7 @@ ColumnLayout {
         Layout.fillWidth: true
         horizontalAlignment: Text.AlignHCenter
         text: root.folder ? "Click to add to / remove from the folder (✓ = in folder) · Esc closes"
-            : "Click to open · right-click to add to / remove from the dock (● = in dock)"
+            : "Click / Enter to open · right-click / Ctrl+P to add to / remove from the dock (● = in dock)"
         color: Theme.alpha(Theme.fg, 0.4)
         font.pixelSize: 11
         font.weight: Font.Normal

@@ -1,6 +1,6 @@
 //@ pragma UseQApplication
 // Quickshell desktop shell: bar, launcher, notifications, OSD. Colors from matugen (colors.json).
-// Control from Hyprland binds:  qs ipc call launcher toggle | cheatsheet toggle | hyprsettings toggle | launcher clipboard | wallpapers toggle | dock toggle | dock apps | notifications toggle | notifications dnd | bar toggle power | session toggle
+// Control from Hyprland binds:  qs ipc call launcher toggle | cheatsheet toggle | hyprsettings toggle | launcher clipboard | wallpapers toggle | dock toggle | dock apps | notifications toggle | notifications dnd | dock focus | bar focus | bar toggle power | session toggle
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -100,10 +100,14 @@ ShellRoot {
         // show/hide the dock (SUPER+D) · open the Applications folder on the focused screen
         function toggle(): void { Dock.toggle() }
         function apps(): void { Ui.toggle("dock-apps:" + (Hyprland.focusedMonitor?.name ?? Quickshell.screens[0].name)) }
+        // keyboard navigation (SUPER+ALT+D): ←/→ move · Enter open · Menu / Shift+F10 menu · Esc leave
+        function focus(): void { Ui.dockKeys = !Ui.dockKeys }
     }
     IpcHandler {
         target: "bar"
         // calendar · audio · power
         function toggle(popup: string): void { Ui.toggle(popup) }
+        // keyboard navigation: ←/→ Tab move · Enter open · Esc leave
+        function focus(): void { Ui.barKeys = !Ui.barKeys }
     }
 }

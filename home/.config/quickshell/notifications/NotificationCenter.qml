@@ -46,6 +46,8 @@ PanelWindow {
 
         focus: root.open
         Keys.onEscapePressed: Ui.notifCenter = false
+        Keys.onDownPressed: nextItemInFocusChain(true).forceActiveFocus()
+        Keys.onUpPressed: nextItemInFocusChain(false).forceActiveFocus()
 
         ColumnLayout {
             anchors.fill: parent
@@ -76,6 +78,7 @@ PanelWindow {
                         T { text: hb.label; color: hb.on ? Theme.primaryText : Theme.fg; font.pixelSize: 12 }
                     }
                     MouseArea { id: hbMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: hb.clicked() }
+                    KeyFocus { onActivated: hb.clicked() }
                 }
 
                 HeaderButton { icon: Notifs.dnd ? Icons.bellOff : Icons.bell; label: "Do not disturb"; on: Notifs.dnd; onClicked: Notifs.dnd = !Notifs.dnd }

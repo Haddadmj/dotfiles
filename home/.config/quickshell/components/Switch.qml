@@ -17,4 +17,5 @@ Rectangle {
         Behavior on x { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
     }
     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: sw.toggled() }
+    KeyFocus { onActivated: sw.toggled() }
 }

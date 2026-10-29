@@ -89,8 +89,11 @@ PanelWindow {
         Behavior on scale { NumberAnimation { duration: Theme.anim; easing.type: Easing.OutCubic } }
 
         Keys.onPressed: e => {
-            if (e.key === Qt.Key_Escape || e.key === Qt.Key_Tab) Ui.overview = false
+            if (e.key === Qt.Key_Escape) Ui.overview = false
             else if (e.key >= Qt.Key_1 && e.key <= Qt.Key_9) root.gotoWorkspace(e.key - Qt.Key_0)
+            // nothing focused yet: arrows / Tab enter the workspace + window chain
+            else if ([Qt.Key_Tab, Qt.Key_Right, Qt.Key_Down].includes(e.key)) content.nextItemInFocusChain(true).forceActiveFocus()
+            else if ([Qt.Key_Backtab, Qt.Key_Left, Qt.Key_Up].includes(e.key)) content.nextItemInFocusChain(false).forceActiveFocus()
             else return
             e.accepted = true
         }
@@ -134,6 +137,7 @@ PanelWindow {
                             cursorShape: Qt.PointingHandCursor
                             onClicked: root.gotoWorkspace(cell.wsId)
                         }
+                        KeyFocus { onActivated: root.gotoWorkspace(cell.wsId) }
 
                         Repeater {
                             model: cell.ws?.toplevels.values ?? []
@@ -211,7 +215,14 @@ PanelWindow {
                                     }
                                 }
 
-                                Tip { target: win; show: wm.containsMouse && !root.dragging; text: win.modelData.title }
+                                // Enter focuses the window, Delete closes it (like middle-click)
+                                KeyFocus {
+                                    id: kf
+                                    anchors.margins: 2
+                                    onActivated: root.focusWindow(win.modelData)
+                                    Keys.onDeletePressed: { Hyprland.dispatch(`hl.dsp.window.close({ window = "address:${root.addr(win.modelData)}" })`); refresh.restart() }
+                                }
+                                Tip { target: win; show: (wm.containsMouse || kf.activeFocus) && !root.dragging; text: win.modelData.title }
                             }
                         }
                     }

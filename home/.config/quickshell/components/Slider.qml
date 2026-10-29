@@ -11,6 +11,12 @@ Item {
 
     implicitHeight: 18
     implicitWidth: 200
+    activeFocusOnTab: true
+    function step(d) { moved(Math.max(0, Math.min(max, value + d * max))) }
+    Keys.onLeftPressed: step(-0.05)
+    Keys.onRightPressed: step(0.05)
+    Keys.onDownPressed: step(-0.05)
+    Keys.onUpPressed: step(0.05)
 
     Rectangle {
         id: track
@@ -34,7 +40,7 @@ Item {
         width: 14; height: 14; radius: 7
         color: root.accent
         border.width: 3
-        border.color: Theme.bg
+        border.color: root.activeFocus ? Theme.fg : Theme.bg
     }
 
     MouseArea {

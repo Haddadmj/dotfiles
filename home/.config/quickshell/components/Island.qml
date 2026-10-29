@@ -35,6 +35,8 @@ Rectangle {
         onWheel: e => root.scrolled(e.angleDelta.y)
     }
 
+    KeyFocus { enabled: root.clickable; onActivated: root.clicked({ button: Qt.LeftButton }) }
+
     RowLayout {
         id: row
         anchors.centerIn: parent

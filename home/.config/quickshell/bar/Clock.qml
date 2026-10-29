@@ -52,6 +52,7 @@ Island {
                 font.pixelSize: 16
                 color: Theme.fgDim
                 MouseArea { anchors.fill: parent; anchors.margins: -6; cursorShape: Qt.PointingHandCursor; onClicked: popup.shift(-1) }
+                KeyFocus { onActivated: popup.shift(-1) }
             }
             T {
                 Layout.fillWidth: true
@@ -60,6 +61,7 @@ Island {
                 color: Theme.primary
                 font.pixelSize: 15
                 MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { popup.year = popup.today.getFullYear(); popup.month = popup.today.getMonth() } }
+                KeyFocus { onActivated: { popup.year = popup.today.getFullYear(); popup.month = popup.today.getMonth() } }
             }
             T {
                 text: Icons.chevronLeft
@@ -67,6 +69,7 @@ Island {
                 font.pixelSize: 16
                 color: Theme.fgDim
                 MouseArea { anchors.fill: parent; anchors.margins: -6; cursorShape: Qt.PointingHandCursor; onClicked: popup.shift(1) }
+                KeyFocus { onActivated: popup.shift(1) }
             }
         }
 
