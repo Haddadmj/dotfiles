@@ -1,5 +1,7 @@
+ab-download-manager-bin
 amd-ucode
 ark
+axel
 base
 base-devel
 bash-completion
@@ -27,6 +29,7 @@ dosfstools
 drkonqi
 duf
 dust
+eden-nightly-bin
 edk2-ovmf
 efibootmgr
 elisa

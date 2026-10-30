@@ -9,6 +9,7 @@ core  .config/fontconfig
 core  .config/xsettingsd
 core  .config/kdeglobals
 core  .config/mimeapps.list
+core  .config/pacman/makepkg.conf
 core  .config/wallhaven
 core  .config/systemd/user
 core  .local/bin/wallhaven-apply
