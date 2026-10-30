@@ -15,3 +15,5 @@ hl.env("ELECTRON_OZONE_PLATFORM_HINT", "auto")   -- Electron apps run natively o
 hl.env("AQ_DRM_DEVICES", "/dev/dri/nvidia-gpu:/dev/dri/amd-igpu") -- render on the 4070 (udev symlinks)
 
 hl.env("TERMINAL", "ghostty")                    -- default terminal for scripts/apps that read $TERMINAL
+hl.env("EDITOR", "micro")                        -- .zshrc only covers shells; apps started outside zsh fell back to vim
+hl.env("VISUAL", "micro")

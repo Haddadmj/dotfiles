@@ -5,5 +5,14 @@ text/html=brave-origin-nightly.desktop
 x-scheme-handler/claude-cli=claude-code-url-handler.desktop
 x-scheme-handler/t3code=com.t3tools.T3Code.desktop
 x-scheme-handler/discord=vesktop.desktop
+text/english=micro.desktop
+text/plain=code-oss.desktop
+text/x-makefile=micro.desktop
+text/x-moc=micro.desktop
+text/x-tcl=micro.desktop
+text/x-tex=micro.desktop
+application/x-shellscript=micro.desktop
+text/x-c=micro.desktop
+text/x-c++=micro.desktop
 
 [Added Associations]

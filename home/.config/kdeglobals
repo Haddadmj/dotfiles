@@ -120,10 +120,10 @@ ForegroundVisited=228,186,217
 
 [General]
 BrowserApplication=brave-origin-nightly.desktop
-ColorScheme=MatugenA
-ColorSchemeHash=39e9fcc72703e8d82537424cd9b03f6b8d9ec58c
-TerminalApplication=konsole
-TerminalService=org.kde.konsole.desktop
+ColorScheme=MatugenB
+ColorSchemeHash=1cb6f3d8b70e7387d74a265a753401b7a9188648
+TerminalApplication=ghostty
+TerminalService=com.mitchellh.ghostty.desktop
 XftAntialias=true
 XftHintStyle=hintslight
 XftSubPixel=rgb

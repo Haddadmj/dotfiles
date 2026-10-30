@@ -401,14 +401,15 @@ PanelWindow {
                 T {
                     id: label
                     anchors.centerIn: parent
-                    text: `${preview.w?.name ?? ""}   ·   Enter apply · ←→ next${root.hidden(preview.w) ? " · Ctrl+H unblur" : ""} · Space back`
+                    text: `${preview.w?.name ?? ""}   ·   Enter apply · ←→ next${root.hidden(preview.w) ? " · Ctrl+H / middle-click unblur" : ""} · Space back`
                 }
             }
             MouseArea {
                 anchors.fill: parent
-                acceptedButtons: Qt.LeftButton | Qt.RightButton
+                acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
                 onClicked: e => {
                     if (e.button === Qt.RightButton) root.previewing = false
+                    else if (e.button === Qt.MiddleButton) root.reveal = !root.reveal
                     else root.apply(preview.w)
                 }
             }

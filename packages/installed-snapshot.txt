@@ -84,6 +84,7 @@ kwallet-pam
 kwalletmanager
 kwrited
 lib32-gamemode
+lib32-mangohud
 lib32-nvidia-utils
 lib32-pipewire
 lib32-vulkan-icd-loader
@@ -100,6 +101,7 @@ linux-firmware
 linux-headers
 man-db
 man-pages
+mangohud
 markdownpart
 matugen
 micro
@@ -161,6 +163,7 @@ satty
 scdoc
 solaar
 spectacle
+steam
 sudo
 svgpart
 sweeper

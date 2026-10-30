@@ -18,7 +18,7 @@ Island {
         watchChanges: true
         onFileChanged: reload()
     }
-    readonly property var ruled: (rules.text().match(/^\s*workspace\s*=\s*"\d+"/gm) ?? []).map(l => +l.match(/\d+/)[0])
+    readonly property var ruled: (rules.text().match(/^\s*workspace\s*=\s*"\d+[^"]*"/gm) ?? []).map(l => +l.match(/\d+/)[0])
 
     readonly property var ids: {
         const s = new Set(ruled)

@@ -42,6 +42,7 @@ ShellRoot {
     NotificationCenter {}
     VolumeOsd {}
     InfoOsd {}
+    ChatOverlay { id: chat }
 
     IpcHandler {
         target: "launcher"
@@ -80,6 +81,10 @@ ShellRoot {
     IpcHandler {
         target: "session"
         function toggle(): void { Ui.session = !Ui.session }
+    }
+    IpcHandler {
+        target: "chat"
+        function toggle(): void { chat.hidden = !chat.hidden }
     }
     IpcHandler {
         target: "lock"

@@ -5,7 +5,7 @@ import Quickshell
 // Nerd Font glyphs (same ones the Waybar config used)
 Singleton {
     readonly property string launcher: "\u{f003b}"
-    readonly property var workspaces: ({ 1: "\u{f489}", 2: "\u{e63c}", 3: "\u{f0a1e}", 4: "\u{f066f}", 5: "\u{f0381}", 6: "\u{f0297}", 7: "\u{f1720}", 8: "\u{f075a}" })
+    readonly property var workspaces: ({ 1: "\u{f489}", 2: "\u{e63c}", 3: "\u{f0a1e}", 4: "\u{f066f}", 5: "\u{f0381}", 6: "\u{f0297}", 7: "\u{f1720}", 8: "\u{f075a}", 9: "\u{f0787}" })
     readonly property string wsDefault: "\u{f0765}"
     readonly property string wsUrgent: "\u{f0026}"
     readonly property string chevronLeft: "\u{f0141}"
