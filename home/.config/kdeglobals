@@ -129,7 +129,7 @@ XftHintStyle=hintslight
 XftSubPixel=rgb
 
 [Icons]
-Theme=Papirus-Dark
+Theme=BreezeRainbowFolders
 
 [KDE]
 LookAndFeelPackage=org.kde.breezedark.desktop

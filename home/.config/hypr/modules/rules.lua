@@ -64,7 +64,7 @@ hl.window_rule({
 -- shortcut: native games have no shared class like Proton's steam_app_*, so each one is listed here
 hl.window_rule({
     name      = "ws9-steam-games",
-    match     = { class = "^(steam_app_.*|code-terraform|com\\.factorio\\.Factorio)$" },
+    match     = { class = "^(steam_app_.*|code-terraform|com\\.factorio\\.Factorio|Minecraft.*)$" },
     workspace = "9",
     tile      = true,
     suppress_event = "fullscreen",
@@ -73,6 +73,8 @@ hl.window_rule({
     name      = "ws7-obs",
     match     = { class = "^(com\\.obsproject\\.Studio|obs)$" },
     workspace = "7",
+    -- OBS's render/encode stalls when its workspace is hidden, which wrecks the live stream
+    render_unfocused = true,
 })
 hl.window_rule({
     name      = "ws8-music",

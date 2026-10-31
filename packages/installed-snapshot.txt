@@ -188,6 +188,7 @@ vesktop-bin
 vicinae-bin
 vim
 virt-manager
+vm-curator-bin
 wf-recorder
 whitesur-cursor-theme-git
 whitesur-icon-theme

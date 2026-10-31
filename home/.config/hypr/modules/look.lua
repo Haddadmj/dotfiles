@@ -55,7 +55,8 @@ hl.config({
     misc = {
         force_default_wallpaper = -1,    -- Set to 0 or 1 to disable the anime mascot wallpapers
         disable_hyprland_logo   = false, -- If true disables the random hyprland logo / anime girl background. :(
-        vrr = 2
+        vrr = 2,
+        render_unfocused_fps = 60, -- default 15 would cap hidden OBS below its 60 fps stream
     },
 })
 
