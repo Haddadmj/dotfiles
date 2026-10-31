@@ -13,7 +13,7 @@ import qs
 PanelWindow {
     id: root
     property string channel: "nightgamerksa"
-    readonly property bool obsOpen: ToplevelManager.toplevels.values.some(t => t.appId === "com.obsproject.Studio")
+    readonly property bool obsOpen: ToplevelManager.toplevels.values.some(t => t.appId === "com.obsproject.Studio" || t.appId === "obs")   // "obs" = under XWayland (QT_QPA_PLATFORM=xcb)
     property bool hidden: false
     readonly property bool shown: obsOpen && !hidden
     onObsOpenChanged: hidden = false

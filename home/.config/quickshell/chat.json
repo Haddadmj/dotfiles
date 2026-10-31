@@ -1,5 +1,5 @@
 {
-    "fadeSeconds": 30,
+    "fadeSeconds": 10,
     "maxLines": 14,
     "font": "Noto Sans",
     "arabicFont": "Noto Sans Arabic",

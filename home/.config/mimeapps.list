@@ -14,5 +14,6 @@ text/x-tex=micro.desktop
 application/x-shellscript=micro.desktop
 text/x-c=micro.desktop
 text/x-c++=micro.desktop
+application/json=code-oss.desktop
 
 [Added Associations]
