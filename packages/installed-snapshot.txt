@@ -189,6 +189,8 @@ virt-manager
 wf-recorder
 whitesur-cursor-theme-git
 whitesur-icon-theme
+wine
+winetricks
 wireplumber
 wofi
 xdg-desktop-portal-hyprland

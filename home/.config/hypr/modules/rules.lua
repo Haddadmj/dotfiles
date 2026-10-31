@@ -60,11 +60,11 @@ hl.window_rule({
     match     = { class = "^([Ss]team|heroic|com\\.heroicgameslauncher\\.hgl|[Ll]utris|net\\.lutris\\.Lutris|com\\.usebottles\\.bottles|PrismLauncher|org\\.prismlauncher\\.PrismLauncher|faugus-launcher|itch|minigalaxy|retroarch|dolphin-emu|pcsx2-qt|rpcs3)$" },
     workspace = "6",
 })
--- Steam games: tiled on their own workspace, ignoring the game's fullscreen request (SUPER+F still works)
+-- Steam games: tiled on their own workspace, ignoring the game's fullscreen request (SUPER+SHIFT+F still works)
 -- shortcut: native games have no shared class like Proton's steam_app_*, so each one is listed here
 hl.window_rule({
     name      = "ws9-steam-games",
-    match     = { class = "^(steam_app_.*|code-terraform)$" },
+    match     = { class = "^(steam_app_.*|code-terraform|com\\.factorio\\.Factorio)$" },
     workspace = "9",
     tile      = true,
     suppress_event = "fullscreen",

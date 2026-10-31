@@ -27,7 +27,7 @@ bind(mainMod .. " + R", hl.dsp.exec_cmd("qs ipc call launcher toggle"), "Apps|La
 bind(mainMod .. " + D", hl.dsp.exec_cmd("qs ipc call dock toggle"), "Apps|Toggle dock")  -- quickshell dock
 bind(mainMod .. " + ALT + C", hl.dsp.exec_cmd("qs ipc call chat toggle"), "Stream|Toggle chat overlay")  -- click-through Twitch chat, hidden from OBS
 -- YouTube Music opens quietly on ws 8; OBS opens (or is focused) on ws 7
-bind(mainMod .. " + ALT + S", hl.dsp.exec_cmd([[sh -c 'pgrep -x youtube-music >/dev/null || youtube-music & if pgrep -x obs >/dev/null; then hyprctl dispatch "hl.dsp.focus({ workspace = \"7\" })"; else obs; fi']]), "Stream|Start streaming apps")
+bind(mainMod .. " + ALT + S", hl.dsp.exec_cmd([[sh -c 'pgrep -x youtube-music >/dev/null || youtube-music & if pgrep -x obs >/dev/null; then hyprctl dispatch "hl.dsp.focus({ workspace = \"7\" })"; else QT_QPA_PLATFORM=xcb obs; fi']]), "Stream|Start streaming apps")
 bind("ALT + SPACE", hl.dsp.exec_cmd("vicinae toggle"), "Apps|Vicinae")  -- Raycast-style launcher (server started in autostart.lua)
 
 -- Theme: pick a wallpaper (colors follow) / random wallpaper / toggle light-dark
@@ -41,6 +41,7 @@ bind(mainMod .. " + ALT + B", hl.dsp.exec_cmd("qs ipc call bar focus"), "Shell|K
 bind(mainMod .. " + ALT + D", hl.dsp.exec_cmd("qs ipc call dock focus"), "Shell|Keyboard-navigate the dock")  -- ←/→ move · Enter open · Menu menu · Esc leave
 bind(mainMod .. " + M", hl.dsp.exec_cmd("qs ipc call session toggle"), "Session|Power menu")  -- quickshell session menu
 bind(mainMod .. " + V", hl.dsp.window.float({ action = "toggle" }), "Windows|Toggle floating")
+bind(mainMod .. " + SHIFT + F", hl.dsp.window.fullscreen(), "Windows|Toggle fullscreen")
 bind(mainMod .. " + P", hl.dsp.window.pseudo(), "Windows|Pseudo-tile")
 bind(mainMod .. " + J", hl.dsp.layout("togglesplit"), "Windows|Toggle split direction")    -- dwindle only
 bind(mainMod .. " + L", hl.dsp.exec_cmd("loginctl lock-session"), "Session|Lock screen")

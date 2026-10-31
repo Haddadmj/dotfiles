@@ -1,11 +1,15 @@
 {
-  "options": {},
+  "options": {
+    "cursor:inactive_timeout": 5,
+    "general:gaps_out": 10,
+    "general:border_size": 1
+  },
   "binds": [],
   "remap": {
     "Tools|Clipboard history": "SUPER + SHIFT + V",
-    "Apps|Editor": "SUPER + C",
+    "Apps|Vicinae": "SUPER + SPACE",
     "Apps|Launcher": "ALT + SPACE",
-    "Apps|Vicinae": "SUPER + SPACE"
+    "Apps|Editor": "SUPER + C"
   },
   "disabledBinds": [],
   "env": {},
