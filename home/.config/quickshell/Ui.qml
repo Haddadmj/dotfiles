@@ -9,6 +9,7 @@ Singleton {
     property string launcherMode: "apps"   // "apps", "clipboard" or "emoji"
     property bool notifCenter: false
     property bool wallpapers: false
+    property bool themeBrowser: false
     property bool quickSettings: false
     property bool overview: false
     property bool screenshot: false
@@ -20,7 +21,7 @@ Singleton {
     property bool keepAwake: false     // idle inhibitor, held by the bar
     property bool barKeys: false       // bar has keyboard focus (SUPER+ALT+B)
     property bool dockKeys: false      // dock has keyboard focus (SUPER+ALT+D)
-    readonly property bool panelOpen: launcher || notifCenter || wallpapers || quickSettings || overview || screenshot || cheatsheet || hyprSettings || session || locked
+    readonly property bool panelOpen: launcher || notifCenter || wallpapers || themeBrowser || quickSettings || overview || screenshot || cheatsheet || hyprSettings || session || locked
     onPanelOpenChanged: if (panelOpen) { barKeys = false; dockKeys = false }   // hand the keyboard to the panel
     onBarKeysChanged: if (barKeys) dockKeys = false
     onDockKeysChanged: if (dockKeys) barKeys = false
@@ -30,5 +31,5 @@ Singleton {
         if (launcher && launcherMode === mode) launcher = false
         else { launcherMode = mode; launcher = true }
     }
-    function closeAll() { popup = ""; launcher = false; notifCenter = false; wallpapers = false; quickSettings = false; overview = false; screenshot = false; cheatsheet = false; hyprSettings = false; session = false }
+    function closeAll() { popup = ""; launcher = false; notifCenter = false; wallpapers = false; themeBrowser = false; quickSettings = false; overview = false; screenshot = false; cheatsheet = false; hyprSettings = false; session = false }
 }

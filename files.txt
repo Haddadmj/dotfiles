@@ -1,6 +1,7 @@
 # <group> <path relative to $HOME>   — what snapshot.sh saves and install.sh restores.
 # Paths under /home/<you> are stored as __HOME__ and rewritten for the new user on install.
 core  .config/hypr
+core  .local/share/icons/Hyprland-Logo
 core  .config/quickshell
 core  .config/ghostty
 core  .config/gtk-3.0

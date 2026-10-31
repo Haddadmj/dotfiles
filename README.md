@@ -58,6 +58,7 @@ Everything below is installed by `install.sh` — this list is so you know what 
 | `quickshell` | bar, launcher, dock, notifications, OSD, lock screen, settings panel |
 | `matugen` | generates colors from the wallpaper (`scripts/theme.sh`) |
 | `hyprpaper` | wallpaper |
+| `python` | theme browser backend (`scripts/theme-store.py`) |
 | `hypridle`, `hyprlock` | idle timeout, screen lock |
 | `hyprlauncher`, `hyprpicker`, `hyprshot`, `hyprshutdown` | app menu, color picker, screenshots, shutdown dialog |
 | `xdg-desktop-portal-hyprland`, `xdg-desktop-portal-gtk` | screen sharing, file pickers (no Plasma needed) |
@@ -109,7 +110,7 @@ If you don't pick the **nvidia** group, the NVIDIA-only env vars in `modules/env
 
 ## Keybinds to know
 
-`SUPER+,` settings panel · `SUPER+W` pick wallpaper · `SUPER+SHIFT+W` random wallpaper · `SUPER+CTRL+W` light/dark
+`SUPER+,` settings panel · `SUPER+W` pick wallpaper · `SUPER+SHIFT+W` random wallpaper · `SUPER+CTRL+W` light/dark · `SUPER+I` / `SUPER+SHIFT+I` pick / next icon theme · `SUPER+U` / `SUPER+SHIFT+U` pick / next cursor theme · `SUPER+CTRL+U` / `SUPER+ALT+U` bigger / smaller cursor · `SUPER+CTRL+I` browse and download themes (Pling)
 
 ## Keep it up to date
 

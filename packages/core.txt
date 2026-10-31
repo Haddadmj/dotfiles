@@ -16,6 +16,8 @@ qt5-wayland                  # Qt5 apps on Wayland
 qt6-wayland                  # Qt6 apps on Wayland
 breeze                       # Qt widget style, Breeze icons and cursor
 breeze-gtk                   # GTK theme
+bibata-cursor-theme-bin      # default cursor (AUR)
+papirus-icon-theme           # default file icons
 pipewire                     # audio
 pipewire-alsa                # audio: ALSA apps
 pipewire-pulse               # audio: PulseAudio apps
@@ -36,6 +38,7 @@ satty                        # screenshot annotation
 libvips                      # wallpaper thumbnails
 libnotify                    # notify-send
 jq                           # JSON in scripts
+python                       # theme browser backend (scripts/theme-store.py)
 rsync                        # used by the installer/snapshot
 headsetcontrol               # headset battery in the bar
 btop                         # system monitor

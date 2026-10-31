@@ -128,6 +128,9 @@ XftAntialias=true
 XftHintStyle=hintslight
 XftSubPixel=rgb
 
+[Icons]
+Theme=Papirus-Dark
+
 [KDE]
 LookAndFeelPackage=org.kde.breezedark.desktop
 contrast=7

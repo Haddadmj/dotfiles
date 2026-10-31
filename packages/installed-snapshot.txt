@@ -6,6 +6,7 @@ base
 base-devel
 bash-completion
 bat
+bibata-cursor-theme-bin
 bind
 blender
 bluedevil
@@ -130,6 +131,7 @@ okular
 os-prober
 otf-font-awesome
 pacman-contrib
+papirus-icon-theme
 partitionmanager
 paru
 paru-debug

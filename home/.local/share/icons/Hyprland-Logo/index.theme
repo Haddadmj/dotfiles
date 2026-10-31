@@ -1,0 +1,4 @@
+[Icon Theme]
+Name=Hyprland-Logo
+Comment=Hyprland logo arrow, every other shape from the inherited theme
+Inherits=breeze_cursors

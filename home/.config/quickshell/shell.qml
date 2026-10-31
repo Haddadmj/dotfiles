@@ -1,6 +1,6 @@
 //@ pragma UseQApplication
 // Quickshell desktop shell: bar, launcher, notifications, OSD. Colors from matugen (colors.json).
-// Control from Hyprland binds:  qs ipc call launcher toggle | cheatsheet toggle | hyprsettings toggle | launcher clipboard | wallpapers toggle | dock toggle | dock apps | notifications toggle | notifications dnd | dock focus | bar focus | bar toggle power | session toggle
+// Control from Hyprland binds:  qs ipc call launcher toggle | cheatsheet toggle | hyprsettings toggle | launcher clipboard | wallpapers toggle | themes toggle | dock toggle | dock apps | notifications toggle | notifications dnd | dock focus | bar focus | bar toggle power | session toggle
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -31,6 +31,7 @@ ShellRoot {
 
     Launcher {}
     WallpaperPicker {}
+    ThemeBrowser {}
     QuickSettings {}
     Overview {}
     ScreenshotMenu {}
@@ -93,6 +94,10 @@ ShellRoot {
     IpcHandler {
         target: "wallpapers"
         function toggle(): void { Ui.wallpapers = !Ui.wallpapers }
+    }
+    IpcHandler {
+        target: "themes"
+        function toggle(): void { Ui.themeBrowser = !Ui.themeBrowser }
     }
     IpcHandler {
         target: "notifications"

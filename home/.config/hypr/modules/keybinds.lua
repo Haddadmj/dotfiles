@@ -34,6 +34,14 @@ bind("ALT + SPACE", hl.dsp.exec_cmd("vicinae toggle"), "Apps|Vicinae")  -- Rayca
 bind(mainMod .. " + W",         hl.dsp.exec_cmd(scripts .. "/theme.sh pick"),        "Theme|Pick wallpaper")
 bind(mainMod .. " + SHIFT + W", hl.dsp.exec_cmd(scripts .. "/theme.sh random"),      "Theme|Random wallpaper")
 bind(mainMod .. " + CTRL + W",  hl.dsp.exec_cmd(scripts .. "/theme.sh toggle-mode"), "Theme|Toggle light / dark")
+-- Theme: pick or step through installed file icon / cursor themes
+bind(mainMod .. " + I",         hl.dsp.exec_cmd(scripts .. "/appearance.sh pick icons"),  "Theme|Pick icon theme")
+bind(mainMod .. " + SHIFT + I", hl.dsp.exec_cmd(scripts .. "/appearance.sh next icons"),  "Theme|Next icon theme")
+bind(mainMod .. " + U",         hl.dsp.exec_cmd(scripts .. "/appearance.sh pick cursor"), "Theme|Pick cursor theme")
+bind(mainMod .. " + SHIFT + U", hl.dsp.exec_cmd(scripts .. "/appearance.sh next cursor"), "Theme|Next cursor theme")
+bind(mainMod .. " + CTRL + U",   hl.dsp.exec_cmd(scripts .. "/appearance.sh size bigger"),  "Theme|Bigger cursor")
+bind(mainMod .. " + ALT + U",    hl.dsp.exec_cmd(scripts .. "/appearance.sh size smaller"), "Theme|Smaller cursor")
+bind(mainMod .. " + CTRL + I",   hl.dsp.exec_cmd("qs ipc call themes toggle"), "Theme|Browse and download themes")  -- Pling, via scripts/theme-store.py
 
 -- Windows / session
 bind(mainMod .. " + Q", hl.dsp.window.close(), "Windows|Close window")
